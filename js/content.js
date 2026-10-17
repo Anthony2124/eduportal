@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (enrollForm) {
     enrollForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      submitAcademics('enroll', enrollForm, 'Student enrolled.');
+      submitAcademics('enroll', enrollForm, 'Student enrolled and added to the class group chat.');
     });
   }
   const gradeForm = document.querySelector('#grade-modal form');
@@ -184,7 +184,7 @@ async function submitAcademics(action, form, successMessage) {
 
 async function unenrollStudent(data) {
   const confirmed = await confirmAction(`Remove ${data.name} from ${data.courseName}?`,
-    "Their grades for this course are removed too. This can't be undone.", 'Remove', 'fa-user-minus');
+    "Their grades for this course are removed too, and they leave the class group chat. This can't be undone.", 'Remove', 'fa-user-minus');
   if (!confirmed) return;
   try {
     await academicsApi('unenroll', { course_id: data.course, student_id: data.student });

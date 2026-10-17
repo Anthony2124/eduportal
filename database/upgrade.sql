@@ -145,3 +145,29 @@ CREATE TABLE IF NOT EXISTS grades (
     CONSTRAINT fk_grades_student FOREIGN KEY (student_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_grades_by FOREIGN KEY (graded_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- Class group chats: every course has one. Its members are the course's faculty and enrolled students
+-- (worked out from enrollments, so enrolling a student adds them automatically).
+-- kind 'added' / 'removed' are the "... was added to the group" notices; user_id is that student.
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    course_id   INT UNSIGNED  NOT NULL,
+    user_id     INT UNSIGNED  NULL,                     -- NULL once the account is deleted
+    kind        ENUM('message', 'added', 'removed') NOT NULL DEFAULT 'message',
+    body        TEXT          NULL,
+    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_chat_messages_course (course_id, id),
+    CONSTRAINT fk_chat_messages_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT fk_chat_messages_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- The last message each person has seen in each chat (for unread counts)
+CREATE TABLE IF NOT EXISTS chat_reads (
+    course_id     INT UNSIGNED  NOT NULL,
+    user_id       INT UNSIGNED  NOT NULL,
+    last_read_id  INT UNSIGNED  NOT NULL DEFAULT 0,
+    PRIMARY KEY (course_id, user_id),
+    CONSTRAINT fk_chat_reads_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT fk_chat_reads_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;

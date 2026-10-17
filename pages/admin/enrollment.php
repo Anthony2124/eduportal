@@ -12,7 +12,7 @@ $available = $course ? students_not_in((int) $course['id']) : [];
 $yearNames = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
 
 app_page_start($user, $page, 'Enrollment');
-app_page_header('Enrollment', 'Add or remove students in a course');
+app_page_header('Enrollment', 'Add or remove students in a course. Enrolled students are added to the class group chat automatically.');
 
 if (!$course) {
     if ($user['role'] === 'faculty') {

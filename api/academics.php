@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 const EDUPORTAL_API = true;
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/../includes/academics.php';
+require __DIR__ . '/../includes/chat.php';
 
 $input = read_json_request();
 
@@ -57,6 +57,7 @@ function enroll(array $user, int $courseId, int $studentId): never
     }
     db()->prepare('INSERT INTO enrollments (course_id, student_id, enrolled_by) VALUES (?, ?, ?)')
         ->execute([$courseId, $studentId, $user['id']]);
+    add_chat_notice($courseId, $studentId, 'added'); // enrolled students are in the class group chat
     json_response(['ok' => true]);
 }
 
@@ -67,6 +68,7 @@ function unenroll(int $courseId, int $studentId): never
     }
     db()->prepare('DELETE FROM grades WHERE course_id = ? AND student_id = ?')->execute([$courseId, $studentId]);
     db()->prepare('DELETE FROM enrollments WHERE course_id = ? AND student_id = ?')->execute([$courseId, $studentId]);
+    add_chat_notice($courseId, $studentId, 'removed');
     json_response(['ok' => true]);
 }
 

@@ -1,4 +1,5 @@
-/* Faculty & Admin dashboards (faculty.php, admin.php). Builds on css/style.css. */
+/* Shared page building blocks (dashboards and portal pages): banner, stat tiles, cards, empty states, tables.
+   Builds on css/style.css. */
 
 html {
   scroll-behavior: smooth;
@@ -260,5 +261,130 @@ html {
   }
   .hide-mobile {
     display: none;
+  }
+}
+
+/* Empty states ("No grades yet") */
+.empty-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+
+.data-table td .empty-state {
+  padding: 28px 12px;
+}
+
+.data-table tr:hover td:only-child {
+  background: transparent;
+}
+
+/* Dashboard quick links */
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 6px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  color: var(--gray-700);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.quick-link i {
+  font-size: 1.15rem;
+  color: var(--primary);
+}
+
+.quick-link:hover {
+  border-color: var(--primary-light);
+  background: rgba(79, 70, 229, 0.05);
+  color: var(--primary);
+}
+
+/* Account Settings */
+.profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #4F46E5, #06B6D4);
+  color: var(--white);
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 32px;
+  margin: 0;
+}
+
+.detail-list > div {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.detail-list dt {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.detail-list dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dark);
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .detail-list {
+    grid-template-columns: 1fr;
+  }
+  .quick-links {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

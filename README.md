@@ -13,8 +13,11 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 2. Put this folder in `C:\xampp\htdocs\` and name it `eduportal`.
 3. Create the database: open http://localhost/phpmyadmin, choose **Import**, and import `database/eduportal.sql`.
    (Already have an older copy of the database? Import `database/upgrade.sql` instead; it keeps existing accounts.)
-4. Copy `api/config.example.php` to `api/config.php`. It works as-is in **demo mode**: codes are shown on screen instead of emailed.
-   To email real codes, fill in a Gmail address and a Gmail **App Password** under `smtp`.
+4. Copy `api/config.example.php` to `api/config.php`, then fill in the Gmail account that sends the 6-digit codes
+   under `smtp`: the Gmail address and a Gmail **App Password**
+   (Google Account → Security → turn on 2-Step Verification → App passwords → create one).
+   Without this, student sign-up and faculty sign-in show "Verification emails aren't set up".
+   Just testing on your own computer? Set `'demo_mode' => true` instead, and codes are shown on screen.
 5. Open http://localhost/eduportal/
 
 **Built-in admin:** choose **Admin** on the sign-in page, username `admin`, password `admin123`. Change this before using the portal for real.

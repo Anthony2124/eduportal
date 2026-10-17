@@ -1,7 +1,7 @@
 <?php
 // Admin dashboard. Signed-out visitors go to sign in; students and faculty go to their own dashboards.
 require __DIR__ . '/api/bootstrap.php';
-require __DIR__ . '/includes/staff_layout.php';
+require __DIR__ . '/includes/app_shell.php';
 
 $user = require_page_role('admin');
 
@@ -18,7 +18,7 @@ $studentsByProgram = db()->query(
 $roleBadges = ['student' => 'badge-primary', 'faculty' => 'badge-success', 'admin' => 'badge-warning'];
 $roleIcons = ['student' => 'fa-user-graduate', 'faculty' => 'fa-chalkboard-user', 'admin' => 'fa-user-shield'];
 
-staff_page_start($user, 'Admin Dashboard', 'Search accounts by name, Gmail or ID...');
+app_page_start($user, 'admin.php', 'Admin Dashboard', ['id' => 'page-search', 'placeholder' => 'Search accounts by name, Gmail or ID...']);
 ?>
             <section class="staff-banner">
                 <div>
@@ -337,4 +337,4 @@ staff_page_start($user, 'Admin Dashboard', 'Search accounts by name, Gmail or ID
                 });
             </script>
 <?php
-staff_page_end();
+app_page_end();

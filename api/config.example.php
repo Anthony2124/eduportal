@@ -3,9 +3,10 @@
  * EduPortal settings template. Copy this file to api/config.php and fill it in.
  * api/config.php is not committed to git because it holds passwords.
  *
- * Leaving google_client_id or the smtp username/password empty runs that part in demo mode:
- *   - no Google Client ID -> the user types their Gmail address instead of choosing a Google account
- *   - no SMTP login       -> the OTP is shown on screen instead of being emailed
+ * Sign-up and faculty sign-in email a 6-digit code, so fill in the smtp Gmail login below
+ * (a Gmail App Password - see the steps above 'smtp'). Without it those steps show an error,
+ * unless demo_mode is turned on for testing.
+ * Leaving google_client_id empty is fine: users type their Gmail address instead of choosing a Google account.
  */
 return [
     // XAMPP MySQL (MariaDB). XAMPP's default root password is empty.
@@ -32,6 +33,13 @@ return [
         'password' => '',          // 16-character App Password, e.g. 'abcd efgh ijkl mnop'
         'from_name' => 'EduPortal',
     ],
+
+    // true = show sign-in codes on screen instead of emailing them, when no Gmail login is set above.
+    // ONLY for testing on your own computer: anyone could then sign up with someone else's Gmail.
+    'demo_mode' => false,
+
+    // School term shown in the top bar of every page (set to '' to hide it)
+    'term_label' => 'AY 2026-2027 • 1st Sem',
 
     'otp' => [
         'ttl_minutes' => 5,        // how long a code stays valid

@@ -113,8 +113,8 @@ function app_sidebar(array $user, string $current): void
 }
 
 /**
- * The top bar. $search: ['id' => ..., 'placeholder' => ...] - keep the id a page's own script uses
- * (e.g. announcement-search) so that page's search keeps working.
+ * The top bar. $search: ['id' => ..., 'placeholder' => ...] for pages whose own script filters
+ * something with it (e.g. the admin's account search); leave it out to show no search box.
  */
 function app_topbar(array $user, array $search = []): void
 {
@@ -129,15 +129,19 @@ function app_topbar(array $user, array $search = []): void
                 <button type="button" class="app-icon-btn app-menu-btn" id="sidebar-toggle" aria-label="Open menu">
                     <i class="fa-solid fa-bars"></i>
                 </button>
+                <?php if ($search): // only pages with something to search show the box ?>
                 <label class="app-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="search"<?= !empty($search['id']) ? ' id="' . e($search['id']) . '"' : '' ?>
                            placeholder="<?= e($search['placeholder'] ?? 'Search...') ?>" aria-label="Search">
                 </label>
+                <?php endif; ?>
             </div>
 
             <div class="app-topbar-right">
-                <span class="app-term-badge"><i class="fa-solid fa-calendar-days"></i> AY 2026-2027 • 1st Sem</span>
+                <?php if (($term = config()['term_label'] ?? '') !== ''): // set in api/config.php ?>
+                <span class="app-term-badge"><i class="fa-solid fa-calendar-days"></i> <?= e($term) ?></span>
+                <?php endif; ?>
                 <?php if (in_array($announcements, $allowed, true)): ?>
                 <a href="<?= e($root . $announcements) ?>" class="app-icon-btn" title="Announcements" aria-label="Announcements">
                     <i class="fa-regular fa-bell"></i>
@@ -173,4 +177,154 @@ function app_topbar(array $user, array $search = []): void
             </div>
         </header>
     <?php
+}
+
+/*
+ * Page wrapper + building blocks, so every page has the same structure:
+ *
+ *   app_page_start($user, $page, 'Grades');
+ *   app_page_header('Grades & Transcript', 'View your academic performance');
+ *   app_stats([['fa-chart-line', 'primary', '—', 'Current GPA'], ...]);
+ *   app_table_card('fa-table-list', 'Academic Record', ['Course', 'Grade'], 'fa-chart-bar', 'No grades yet', '...');
+ *   app_page_end();
+ */
+function app_page_start(array $user, string $page, string $title, array $search = []): void
+{
+    $root = site_root();
+    ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= e($title) ?> - EduPortal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= e($root) ?>css/style.css">
+    <link rel="stylesheet" href="<?= e($root) ?>css/portal.css?v=1">
+    <?php app_shell_styles(); ?>
+</head>
+<body>
+    <?php app_sidebar($user, $page); ?>
+
+    <div class="main-content app-main">
+        <?php app_topbar($user, $search); ?>
+
+        <main class="content-area" id="top">
+    <?php
+}
+
+function app_page_end(): void
+{
+    ?>
+        </main>
+    </div>
+
+    <script src="<?= e(site_root()) ?>js/main.js?v=10"></script>
+</body>
+</html>
+    <?php
+}
+
+function app_page_header(string $title, string $subtitle): void
+{
+    ?>
+            <div class="page-header">
+                <h1><?= e($title) ?></h1>
+                <p class="page-subtitle"><?= e($subtitle) ?></p>
+            </div>
+    <?php
+}
+
+/** Summary tiles: [[icon, tone (primary|secondary|success|warning|danger), value, label], ...] */
+function app_stats(array $tiles): void
+{
+    ?>
+            <section class="grid-<?= min(count($tiles), 4) ?> section-gap">
+                <?php foreach ($tiles as [$icon, $tone, $value, $label]): ?>
+                <div class="stat-tile">
+                    <div class="stat-tile-icon tone-<?= e($tone) ?>"><i class="fa-solid <?= e($icon) ?>"></i></div>
+                    <div>
+                        <div class="stat-tile-value"><?= e($value) ?></div>
+                        <div class="stat-tile-label"><?= e($label) ?></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </section>
+    <?php
+}
+
+/** "Nothing here yet" message, used inside cards. */
+function app_empty(string $icon, string $title, string $text): void
+{
+    ?>
+                    <div class="empty-state">
+                        <i class="fa-solid <?= e($icon) ?>"></i>
+                        <div class="empty-title"><?= e($title) ?></div>
+                        <div><?= e($text) ?></div>
+                    </div>
+    <?php
+}
+
+function app_card_header(string $icon, string $title, string $subtitle = ''): void
+{
+    ?>
+                <div class="card-header">
+                    <div>
+                        <div class="card-title"><i class="fa-solid <?= e($icon) ?>" style="color: var(--primary);"></i> <?= e($title) ?></div>
+                        <?php if ($subtitle !== ''): ?>
+                        <div class="card-subtitle"><?= e($subtitle) ?></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+    <?php
+}
+
+/** A card that has nothing in it yet. */
+function app_empty_card(string $icon, string $title, string $emptyIcon, string $emptyTitle, string $emptyText, string $subtitle = ''): void
+{
+    ?>
+            <section class="card section-gap">
+                <?php app_card_header($icon, $title, $subtitle); ?>
+                <?php app_empty($emptyIcon, $emptyTitle, $emptyText); ?>
+            </section>
+    <?php
+}
+
+/** A table card with its column headings and no rows yet. */
+function app_table_card(string $icon, string $title, array $columns, string $emptyIcon, string $emptyTitle, string $emptyText, string $subtitle = ''): void
+{
+    ?>
+            <section class="card section-gap">
+                <?php app_card_header($icon, $title, $subtitle); ?>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <?php foreach ($columns as $column): ?>
+                                <th><?= e($column) ?></th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="<?= count($columns) ?>"><?php app_empty($emptyIcon, $emptyTitle, $emptyText); ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+    <?php
+}
+
+/** "Good morning" / "Good afternoon" / "Good evening" for dashboard banners. */
+function time_greeting(): string
+{
+    $hour = (int) date('G');
+    return match (true) {
+        $hour >= 5 && $hour < 12 => 'Good morning',
+        $hour >= 12 && $hour < 17 => 'Good afternoon',
+        $hour >= 17 && $hour < 22 => 'Good evening',
+        default => 'Hello',
+    };
 }

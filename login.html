@@ -1285,38 +1285,38 @@
                     </p>
                 </div>
 
-                <!-- Floating Stat Cards -->
+                <!-- What the portal offers -->
                 <div class="stats-showcase">
-                    <!-- Stat Card 1 -->
+                    <!-- Highlight 1 -->
                     <div class="floating-stat-card stat-card-1">
                         <div class="stat-icon students">
-                            <i class="fa-solid fa-user-graduate"></i>
+                            <i class="fa-solid fa-book-open-reader"></i>
                         </div>
                         <div class="stat-details">
-                            <div class="stat-value">15,000+ Students</div>
-                            <div class="stat-label">Enrolled across 12 faculties</div>
+                            <div class="stat-value">Your Classes in One Place</div>
+                            <div class="stat-label">Courses, schedule, exams and grades</div>
                         </div>
                     </div>
 
-                    <!-- Stat Card 2 -->
+                    <!-- Highlight 2 -->
                     <div class="floating-stat-card stat-card-2">
                         <div class="stat-icon courses">
-                            <i class="fa-solid fa-book-open"></i>
+                            <i class="fa-solid fa-bullhorn"></i>
                         </div>
                         <div class="stat-details">
-                            <div class="stat-value">500+ Courses</div>
-                            <div class="stat-label">Accredited modern curriculum</div>
+                            <div class="stat-value">Stay in the Loop</div>
+                            <div class="stat-label">Announcements, messages and events</div>
                         </div>
                     </div>
 
-                    <!-- Stat Card 3 -->
+                    <!-- Highlight 3 -->
                     <div class="floating-stat-card stat-card-3">
                         <div class="stat-icon satisfaction">
-                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-shield-halved"></i>
                         </div>
                         <div class="stat-details">
-                            <div class="stat-value">98% Satisfaction</div>
-                            <div class="stat-label">Consistent student approval rating</div>
+                            <div class="stat-value">Secure Accounts</div>
+                            <div class="stat-label">New accounts are verified through Gmail</div>
                         </div>
                     </div>
                 </div>
@@ -1638,12 +1638,11 @@
                     <!-- Google Identity Services button -->
                     <div class="google-btn-slot" id="googleLinkBtn"></div>
 
-                    <!-- Fallback when no Google Client ID is configured -->
+                    <!-- Used when no Google Client ID is configured: the Gmail is typed in, then confirmed with an emailed code -->
                     <form class="auth-form" id="gmailFallbackForm" novalidate>
-                        <div class="notice">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>Demo mode: Google sign-in isn't set up yet, so enter your Gmail address manually.</span>
-                        </div>
+                        <p class="form-subtitle" style="text-align: center;">
+                            Enter the Gmail address you want to link. We'll email it a 6-digit code to make sure it's yours.
+                        </p>
                         <div class="form-group">
                             <label for="fallbackGmail" class="form-label"><span>Gmail Address</span></label>
                             <div class="input-group">
@@ -1811,7 +1810,7 @@
             // Flow State
             let currentView = 'signin';
             let otpPurpose = null;        // 'signup' | 'signin'
-            let googleClientId = '';      // set from api/config.php; empty = demo mode (type Gmail manually)
+            let googleClientId = '';      // set from api/config.php; empty = the Gmail is typed in instead
             let googleReady = false;
             let isVerifying = false;
             let countdownTimer = null;
@@ -2288,7 +2287,7 @@
             }
 
             function showCodeSent(data) {
-                // demoCode only comes back when no Gmail SMTP login is set in api/config.php
+                // demoCode only comes back when demo_mode is turned on in api/config.php (testing only)
                 otpDemoNotice.style.display = data.demoCode ? 'flex' : 'none';
                 otpDemoCode.textContent = data.demoCode || '';
                 showToast(data.demoCode

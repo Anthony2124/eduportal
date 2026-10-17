@@ -290,11 +290,15 @@ function action_resend(): never
     json_response(issue_otp($target['purpose'], $target['email'], $target['name']));
 }
 
-/** Creates the code, emails it (or returns it in demo mode) and remembers its hash in the session. */
+/**
+ * Creates the code, emails it and remembers its hash in the session. Only when demo_mode is switched on
+ * in api/config.php (and no Gmail login is set) is the code returned to the page instead of emailed.
+ */
 function issue_otp(string $purpose, string $email, string $name): array
 {
     $otpConfig = config()['otp'];
     $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $demoMode = !smtp_configured() && !empty(config()['demo_mode']);
 
     if (smtp_configured()) {
         try {
@@ -303,6 +307,11 @@ function issue_otp(string $purpose, string $email, string $name): array
             error_log('[EduPortal] OTP email failed: ' . $e->getMessage());
             fail("We couldn't send the code to your Gmail. Please try again.", 502, ['detail' => $e->getMessage()]);
         }
+    } elseif (!$demoMode) {
+        // Never show codes on screen just because email isn't configured
+        error_log('[EduPortal] Cannot send a verification code: no Gmail login (smtp) in api/config.php');
+        fail("Verification emails aren't set up on this copy of EduPortal yet. "
+            . 'Add a Gmail address and App Password under smtp in api/config.php.', 503);
     }
 
     $_SESSION['otp'] = [
@@ -315,8 +324,8 @@ function issue_otp(string $purpose, string $email, string $name): array
     $_SESSION['otp_target'] = ['purpose' => $purpose, 'email' => $email, 'name' => $name, 'sent_at' => time()];
 
     $result = ['maskedEmail' => mask_email($email), 'resendSeconds' => $otpConfig['resend_seconds']];
-    if (!smtp_configured()) {
-        $result['demoCode'] = $code; // demo mode only: no Gmail SMTP login in api/config.php
+    if ($demoMode) {
+        $result['demoCode'] = $code; // demo_mode => true in api/config.php: testing on your own computer only
     }
     return $result;
 }

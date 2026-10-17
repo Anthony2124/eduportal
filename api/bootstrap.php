@@ -110,7 +110,6 @@ const PAGE_SECTIONS = [
         'pages/student-life/clubs.php' => ['fa-users', 'Clubs'],
     ],
     'Smart Features' => [
-        'pages/smart/ai-assistant.php' => ['fa-robot', 'AI Assistant'],
         'pages/smart/analytics.php' => ['fa-chart-line', 'Analytics'],
     ],
     'Settings' => [
@@ -121,7 +120,21 @@ const PAGE_SECTIONS = [
 // Which of those pages each role can open ('*' = all of them). Edit this to change access.
 // Only admins can manage accounts (admin.php) no matter what is listed here.
 const ROLE_PAGES = [
-    'admin' => '*',
+    // Admin: no Assignments, Grades, Schedule or Exams (faculty run their classes). Courses stays so the
+    // admin can set up courses and assign faculty; it's linked at the top of the admin menu instead.
+    'admin' => [
+        'pages/academics/courses.php',
+        'pages/admin/enrollment.php',
+        'pages/admin/scholarships.php',
+        'pages/communication/messaging.php',
+        'pages/communication/announcements.php',
+        'pages/communication/forums.php',
+        'pages/communication/office-hours.php',
+        'pages/student-life/events.php',
+        'pages/student-life/clubs.php',
+        'pages/smart/analytics.php',
+        'pages/settings/profile.php',
+    ],
     'faculty' => [
         'pages/academics/courses.php',
         'pages/academics/assignments.php',
@@ -136,7 +149,7 @@ const ROLE_PAGES = [
         'pages/student-life/events.php',
         'pages/settings/profile.php',
     ],
-    // Students: no Enrollment (admin + faculty), AI Assistant and Analytics (admin only)
+    // Students: no Enrollment (admin + faculty) or Analytics (admin only)
     'student' => [
         'pages/academics/courses.php',
         'pages/academics/assignments.php',

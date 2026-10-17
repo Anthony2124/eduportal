@@ -9,7 +9,7 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 - **Add / Edit / Remove:** the Admin manages Courses (and assigns faculty), Events and Scholarships;
   the Admin and Faculty post Announcements (Faculty can change only their own). Everything is saved in MySQL.
 - **Classes:** on **Enrollment** the Admin or the course's Faculty adds students to a course. Faculty then post
-  **Assignments** and **Exams** and enter **Grades** for their own courses; the Admin can do this for every course.
+  **Assignments** and **Exams** and enter **Grades** for their own courses (the Admin doesn't have these pages).
   Students see only the courses they're enrolled in: their schedule, assignments, exams, grades and GPA.
 - **Grades** use the 1.00–5.00 scale: 1.00 is the highest, 3.00 the lowest passing grade, 5.00 failed.
   The final rating is the average of the midterm and final grades, and the GPA is weighted by units.

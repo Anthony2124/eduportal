@@ -17,7 +17,8 @@ require_once __DIR__ . '/../api/bootstrap.php';
 
 // Extra sidebar links (parts of their dashboard) for faculty and admins: [href, icon, label]
 const ROLE_DASHBOARD_LINKS = [
-    'admin' => [['admin.php#add-faculty', 'fa-user-plus', 'Add Faculty'], ['admin.php#accounts', 'fa-users-gear', 'Accounts']],
+    'admin' => [['admin.php#add-faculty', 'fa-user-plus', 'Add Faculty'], ['admin.php#accounts', 'fa-users-gear', 'Accounts'],
+        ['pages/academics/courses.php', 'fa-book', 'Courses']],
     'faculty' => [['faculty.php#classes', 'fa-chalkboard-user', 'My Classes'], ['faculty.php#roster', 'fa-users', 'Student Roster']],
     'student' => [],
 ];
@@ -87,11 +88,13 @@ function app_sidebar(array $user, string $current): void
             <div class="app-nav-section">
                 <?php app_nav_link($root . $dashboard, 'fa-house', 'Dashboard', $current === $dashboard); ?>
                 <?php foreach (ROLE_DASHBOARD_LINKS[$role] as [$href, $icon, $label]) {
-                    app_nav_link($root . $href, $icon, $label, false);
+                    app_nav_link($root . $href, $icon, $label, $current === $href);
                 } ?>
             </div>
             <?php foreach (PAGE_SECTIONS as $section => $pages):
-                $pages = array_intersect_key($pages, array_flip($allowed));
+                // pages already linked at the top aren't repeated in their section
+                $pages = array_diff_key(array_intersect_key($pages, array_flip($allowed)),
+                    array_flip(array_column(ROLE_DASHBOARD_LINKS[$role], 0)));
                 if (!$pages) {
                     continue;
                 }

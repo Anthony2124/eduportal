@@ -1,7 +1,7 @@
 <?php
 /*
- * Enrollment and grades (called by js/content.js). Admins can do this for every course,
- * faculty only for courses assigned to them.
+ * Enrollment and grades (called by js/content.js). Admins can enroll students in every course;
+ * faculty enroll students and enter grades only for courses assigned to them.
  *
  *   POST api/academics.php?action=enroll        { course_id, student_id }
  *   POST api/academics.php?action=unenroll      { course_id, student_id }   also removes that student's grade
@@ -25,8 +25,12 @@ $studentId = (int) ($input['student_id'] ?? 0);
 if (!teaches_course($user, $courseId)) {
     fail('You can only do this for your own courses (or the course no longer exists).', 403);
 }
+$action = $_GET['action'] ?? '';
+if (in_array($action, ['save_grade', 'clear_grade'], true) && $user['role'] !== 'faculty') {
+    fail("Grades are entered by the course's faculty.", 403);
+}
 
-match ($_GET['action'] ?? '') {
+match ($action) {
     'enroll' => enroll($user, $courseId, $studentId),
     'unenroll' => unenroll($courseId, $studentId),
     'save_grade' => save_grade($user, $courseId, $studentId, $input),

@@ -27,64 +27,77 @@ function initLogoutConfirm() {
     if (!link || sitePath(link.href) !== 'logout.php') return;
     e.preventDefault();
     e.stopPropagation();
-    confirmLogout(link.href);
+    confirmAction('Log out of EduPortal?', "You'll need to sign in again to access your account.", 'Log Out', 'fa-right-from-bracket')
+      .then(confirmed => {
+        if (confirmed) window.location.href = link.href;
+      });
   }, true);
 }
 
-function confirmLogout(logoutUrl) {
-  let dialog = document.getElementById('logout-dialog');
+/**
+ * "Are you sure?" box. Resolves true when the red button is clicked; false for Cancel,
+ * the Esc key or a click outside the box.
+ */
+function confirmAction(title, text, confirmLabel, icon = 'fa-triangle-exclamation') {
+  let dialog = document.getElementById('confirm-dialog');
   if (!dialog) {
     const style = document.createElement('style');
     style.textContent = `
-      .logout-dialog { margin: auto; border: none; border-radius: 16px; padding: 28px 26px 22px; width: min(380px, calc(100vw - 32px));
+      .confirm-dialog { margin: auto; border: none; border-radius: 16px; padding: 28px 26px 22px; width: min(380px, calc(100vw - 32px));
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
         text-align: center; font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; color: #1E293B; }
-      .logout-dialog::backdrop { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(3px); }
-      .logout-dialog-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; display: flex;
+      .confirm-dialog::backdrop { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(3px); }
+      .confirm-dialog-icon { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 50%; display: flex;
         align-items: center; justify-content: center; font-size: 1.4rem; background: rgba(239, 68, 68, 0.12); color: #DC2626; }
-      .logout-dialog h3 { font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; }
-      .logout-dialog p { font-size: 0.9rem; color: #64748B; margin: 0 0 22px; line-height: 1.5; }
-      .logout-dialog-actions { display: flex; gap: 10px; }
-      .logout-dialog-actions button { flex: 1; padding: 11px 16px; border-radius: 10px; font-size: 0.92rem;
+      .confirm-dialog h3 { font-size: 1.15rem; font-weight: 700; margin: 0 0 6px; word-break: break-word; }
+      .confirm-dialog p { font-size: 0.9rem; color: #64748B; margin: 0 0 22px; line-height: 1.5; }
+      .confirm-dialog-actions { display: flex; gap: 10px; }
+      .confirm-dialog-actions button { flex: 1; padding: 11px 16px; border-radius: 10px; font-size: 0.92rem;
         font-weight: 600; cursor: pointer; font-family: inherit; transition: background-color 0.15s ease; }
-      .logout-dialog-cancel { background: #FFFFFF; border: 1px solid #CBD5E1; color: #334155; }
-      .logout-dialog-cancel:hover { background: #F1F5F9; }
-      .logout-dialog-confirm { background: #EF4444; border: 1px solid #EF4444; color: #FFFFFF; }
-      .logout-dialog-confirm:hover { background: #DC2626; }
-      .logout-dialog-actions button:focus-visible { outline: 3px solid rgba(79, 70, 229, 0.35); outline-offset: 2px; }
+      .confirm-dialog-cancel { background: #FFFFFF; border: 1px solid #CBD5E1; color: #334155; }
+      .confirm-dialog-cancel:hover { background: #F1F5F9; }
+      .confirm-dialog-confirm { background: #EF4444; border: 1px solid #EF4444; color: #FFFFFF; }
+      .confirm-dialog-confirm:hover { background: #DC2626; }
+      .confirm-dialog-actions button:focus-visible { outline: 3px solid rgba(79, 70, 229, 0.35); outline-offset: 2px; }
     `;
     document.head.appendChild(style);
 
     dialog = document.createElement('dialog');
-    dialog.id = 'logout-dialog';
-    dialog.className = 'logout-dialog';
-    dialog.setAttribute('aria-labelledby', 'logout-dialog-title');
+    dialog.id = 'confirm-dialog';
+    dialog.className = 'confirm-dialog';
+    dialog.setAttribute('aria-labelledby', 'confirm-dialog-title');
     dialog.innerHTML = `
-      <div class="logout-dialog-icon"><i class="fa-solid fa-right-from-bracket"></i></div>
-      <h3 id="logout-dialog-title">Log out of EduPortal?</h3>
-      <p>You'll need to sign in again to access your account.</p>
-      <div class="logout-dialog-actions">
-        <button type="button" class="logout-dialog-cancel">Cancel</button>
-        <button type="button" class="logout-dialog-confirm">Log Out</button>
+      <div class="confirm-dialog-icon"><i></i></div>
+      <h3 id="confirm-dialog-title"></h3>
+      <p></p>
+      <div class="confirm-dialog-actions">
+        <button type="button" class="confirm-dialog-cancel">Cancel</button>
+        <button type="button" class="confirm-dialog-confirm"></button>
       </div>
     `;
     document.body.appendChild(dialog);
 
-    dialog.querySelector('.logout-dialog-cancel').addEventListener('click', () => dialog.close());
-    dialog.querySelector('.logout-dialog-confirm').addEventListener('click', () => {
-      window.location.href = dialog.dataset.logoutUrl;
-    });
+    dialog.querySelector('.confirm-dialog-cancel').addEventListener('click', () => dialog.close('cancel'));
+    dialog.querySelector('.confirm-dialog-confirm').addEventListener('click', () => dialog.close('confirm'));
     // Clicking the dark backdrop (outside the box) also cancels
     dialog.addEventListener('click', (e) => {
       const box = dialog.getBoundingClientRect();
       const outside = e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom;
-      if (e.target === dialog && outside) dialog.close();
+      if (e.target === dialog && outside) dialog.close('cancel');
     });
   }
 
-  dialog.dataset.logoutUrl = logoutUrl;
+  dialog.querySelector('.confirm-dialog-icon i').className = `fa-solid ${icon}`;
+  dialog.querySelector('h3').textContent = title;
+  dialog.querySelector('p').textContent = text;
+  dialog.querySelector('.confirm-dialog-confirm').textContent = confirmLabel;
+  dialog.returnValue = '';
   dialog.showModal();
-  dialog.querySelector('.logout-dialog-cancel').focus();
+  dialog.querySelector('.confirm-dialog-cancel').focus();
+
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'confirm'), { once: true });
+  });
 }
 
 // Sidebar open/close on phones (the menu button only shows on small screens)

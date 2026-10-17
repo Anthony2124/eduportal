@@ -2,6 +2,7 @@
 // Faculty dashboard. Signed-out visitors go to sign in; students and admins go to their own dashboards.
 require __DIR__ . '/api/bootstrap.php';
 require __DIR__ . '/includes/app_shell.php';
+require __DIR__ . '/includes/content.php';
 
 $user = require_page_role('faculty');
 
@@ -27,6 +28,7 @@ if ($programs) {
     $stmt->execute($programs);
     $roster = $stmt->fetchAll();
 }
+$myClasses = content_items('courses', 'a.faculty_id = ?', [$user['id']]);
 $allStudents = (int) db()->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn();
 $yearNames = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
 
@@ -44,13 +46,15 @@ app_page_start($user, 'faculty.php', 'Faculty Dashboard', ['id' => 'page-search'
 
 <?php
 app_stats([
+    ['fa-chalkboard', 'primary', count($myClasses), 'Classes assigned to you'],
     ['fa-user-graduate', 'success', count($roster), 'Students in your department'],
     ['fa-school', 'warning', $allStudents, 'Registered students (all programs)'],
 ]);
 ?>
-            <div id="classes">
-                <?php app_empty_card('fa-chalkboard-user', 'My Classes', 'fa-chalkboard', 'No classes assigned yet', 'Classes assigned to you will appear here.'); ?>
-            </div>
+            <section class="card section-gap" id="classes">
+                <?php app_card_header('fa-chalkboard-user', 'My Classes', 'Courses the admin assigned to you'); ?>
+                <?php course_table($user, $myClasses, false, 'No classes assigned yet', 'Courses the admin assigns to you will appear here.'); ?>
+            </section>
 
             <section class="card section-gap" id="roster">
                 <div class="card-header">

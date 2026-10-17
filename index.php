@@ -2,8 +2,12 @@
 // Student dashboard. Signed-out visitors go to sign in; faculty and admins go to their own dashboards.
 require __DIR__ . '/api/bootstrap.php';
 require __DIR__ . '/includes/app_shell.php';
+require __DIR__ . '/includes/content.php';
 
 $user = require_page_role('student');
+
+$latestAnnouncements = content_items('announcements', '', [], 3);
+$upcomingEvents = content_items('events', 'a.event_date >= CURDATE()', [], 3);
 
 // Shortcuts to the student's own pages (only ones this role can open)
 $quickLinks = [
@@ -46,10 +50,13 @@ app_table_card('fa-chart-bar', 'Recent Grades', ['Course', 'Assessment', 'Grade'
 ?>
                 </div>
                 <div>
-<?php
-app_empty_card('fa-bullhorn', 'Announcements', 'fa-bullhorn', 'No announcements yet',
-    'News from your school will appear here.');
-?>
+                    <section class="card section-gap">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid fa-bullhorn" style="color: var(--primary);"></i> Announcements</div>
+                            <a href="pages/communication/announcements.php" class="card-link">View all</a>
+                        </div>
+                        <?php announcement_list($user, $latestAnnouncements, true); ?>
+                    </section>
                     <section class="card section-gap">
                         <?php app_card_header('fa-bolt', 'Quick Links'); ?>
                         <div class="card-body">
@@ -67,10 +74,13 @@ app_empty_card('fa-bullhorn', 'Announcements', 'fa-bullhorn', 'No announcements 
                             </div>
                         </div>
                     </section>
-<?php
-app_empty_card('fa-calendar-check', 'Upcoming Events', 'fa-calendar', 'No upcoming events',
-    'School events will appear here.');
-?>
+                    <section class="card section-gap">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Upcoming Events</div>
+                            <a href="pages/student-life/events.php" class="card-link">View all</a>
+                        </div>
+                        <?php event_list($user, $upcomingEvents, true); ?>
+                    </section>
                 </div>
             </div>
 <?php

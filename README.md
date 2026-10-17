@@ -6,6 +6,8 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 - **Faculty** accounts are created by the Admin. Faculty sign in with their Employee ID or Gmail, password, and a code sent to their Gmail.
 - **Admin** is a built-in account. It manages accounts and can open every page.
 - Every page shares one sidebar and top bar, and each role only sees (and can only open) its own pages.
+- **Add / Edit / Remove:** the Admin manages Courses (and assigns faculty), Events and Scholarships;
+  the Admin and Faculty post Announcements (Faculty can change only their own). Everything is saved in MySQL.
 
 ## Run it on your computer
 
@@ -22,6 +24,13 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 
 **Built-in admin:** choose **Admin** on the sign-in page, username `admin`, password `admin123`. Change this before using the portal for real.
 
+## Getting updates
+
+1. In the `eduportal` folder, run `git pull`.
+2. Then import `database/upgrade.sql` in phpMyAdmin (**Import**). It adds any new tables and keeps your existing
+   accounts and data, and it is safe to import more than once. Skipping it makes pages like Courses or Events show
+   a database error after an update that added tables.
+
 ## Where things are
 
 | Path | What it does |
@@ -32,6 +41,7 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 | `includes/app_shell.php`, `css/app-shell.css` | The shared sidebar and top bar |
 | `api/auth.php` | Sign-in, sign-up and verification codes |
 | `api/admin.php` | Admin actions (create faculty, delete accounts) |
+| `includes/content.php`, `api/content.php`, `js/content.js` | Add / Edit / Remove for courses, events, scholarships and announcements (fields and permissions are in `CONTENT_TYPES`) |
 | `api/bootstrap.php` | Shared setup, and `ROLE_PAGES`: which pages each role can open |
 | `api/config.php` | Your settings (not in git; copy from `api/config.example.php`) |
 | `database/` | Database setup and upgrade scripts |

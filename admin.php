@@ -2,6 +2,7 @@
 // Admin dashboard. Signed-out visitors go to sign in; students and faculty go to their own dashboards.
 require __DIR__ . '/api/bootstrap.php';
 require __DIR__ . '/includes/app_shell.php';
+require __DIR__ . '/includes/content.php';
 
 $user = require_page_role('admin');
 
@@ -14,6 +15,15 @@ $newThisWeek = (int) db()->query('SELECT COUNT(*) FROM users WHERE created_at >=
 $studentsByProgram = db()->query(
     "SELECT program, COUNT(*) AS total FROM users WHERE role = 'student' GROUP BY program ORDER BY total DESC, program"
 )->fetchAll();
+
+// Content the admin manages, with how many of each exist
+$contentCount = fn(string $type) => (int) db()->query('SELECT COUNT(*) FROM ' . CONTENT_TYPES[$type]['table'])->fetchColumn();
+$contentLinks = [
+    ['pages/academics/courses.php', 'fa-book', 'Courses', $contentCount('courses')],
+    ['pages/communication/announcements.php', 'fa-bullhorn', 'Announcements', $contentCount('announcements')],
+    ['pages/student-life/events.php', 'fa-calendar', 'Events', $contentCount('events')],
+    ['pages/admin/scholarships.php', 'fa-graduation-cap', 'Scholarships', $contentCount('scholarships')],
+];
 
 $roleBadges = ['student' => 'badge-primary', 'faculty' => 'badge-success', 'admin' => 'badge-warning'];
 $roleIcons = ['student' => 'fa-user-graduate', 'faculty' => 'fa-chalkboard-user', 'admin' => 'fa-user-shield'];
@@ -58,6 +68,21 @@ app_page_start($user, 'admin.php', 'Admin Dashboard', ['id' => 'page-search', 'p
                     <div>
                         <div class="stat-tile-value"><?= $roleCounts['admin'] ?></div>
                         <div class="stat-tile-label">Admins</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card section-gap" id="content">
+                <?php app_card_header('fa-pen-to-square', 'Portal Content', 'Add, edit or remove what everyone sees'); ?>
+                <div class="card-body">
+                    <div class="manage-links">
+                        <?php foreach ($contentLinks as [$href, $icon, $label, $count]): ?>
+                        <a href="<?= e($href) ?>" class="manage-link">
+                            <i class="fa-solid <?= e($icon) ?>"></i>
+                            <span><strong><?= (int) $count ?></strong> <?= e($label) ?></span>
+                            <i class="fa-solid fa-arrow-right manage-arrow"></i>
+                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </section>

@@ -201,7 +201,7 @@ function app_page_start(array $user, string $page, string $title, array $search 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= e($root) ?>css/style.css">
-    <link rel="stylesheet" href="<?= e($root) ?>css/portal.css?v=2">
+    <link rel="stylesheet" href="<?= e($root) ?>css/portal.css?v=3">
     <?php app_shell_styles(); ?>
 </head>
 <body>
@@ -221,7 +221,7 @@ function app_page_end(): void
     </div>
 
     <script src="<?= e(site_root()) ?>js/main.js?v=11"></script>
-    <script src="<?= e(site_root()) ?>js/content.js?v=1"></script>
+    <script src="<?= e(site_root()) ?>js/content.js?v=2"></script>
 </body>
 </html>
     <?php

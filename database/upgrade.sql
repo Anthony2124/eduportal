@@ -81,3 +81,67 @@ CREATE TABLE IF NOT EXISTS courses (
     CONSTRAINT fk_courses_faculty FOREIGN KEY (faculty_id) REFERENCES users (id) ON DELETE SET NULL,
     CONSTRAINT fk_courses_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- Academics: which students are in which course, plus assignments, exams and grades per course.
+-- Removing a course or a student account also removes their rows here.
+CREATE TABLE IF NOT EXISTS enrollments (
+    id           INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    course_id    INT UNSIGNED  NOT NULL,
+    student_id   INT UNSIGNED  NOT NULL,
+    enrolled_by  INT UNSIGNED  NULL,
+    created_at   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_enrollments_course_student (course_id, student_id),
+    CONSTRAINT fk_enrollments_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT fk_enrollments_student FOREIGN KEY (student_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_enrollments_by FOREIGN KEY (enrolled_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS assignments (
+    id            INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    course_id     INT UNSIGNED  NOT NULL,
+    title         VARCHAR(150)  NOT NULL,
+    due_date      DATE          NOT NULL,
+    due_time      TIME          NULL,
+    instructions  TEXT          NULL,
+    created_by    INT UNSIGNED  NULL,
+    created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP     NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_assignments_due (due_date),
+    CONSTRAINT fk_assignments_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT fk_assignments_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS exams (
+    id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    course_id   INT UNSIGNED  NOT NULL,
+    title       VARCHAR(150)  NOT NULL,
+    exam_type   VARCHAR(30)   NOT NULL,                 -- Quiz, Prelim, Midterm, Pre-final, Final, Other
+    exam_date   DATE          NOT NULL,
+    start_time  TIME          NULL,
+    end_time    TIME          NULL,
+    room        VARCHAR(60)   NULL,
+    created_by  INT UNSIGNED  NULL,
+    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP     NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_exams_date (exam_date),
+    CONSTRAINT fk_exams_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT fk_exams_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS grades (
+    id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    course_id   INT UNSIGNED  NOT NULL,
+    student_id  INT UNSIGNED  NOT NULL,
+    midterm     DECIMAL(3,2)  NULL,                     -- 1.00 (highest) to 5.00 (failed)
+    final       DECIMAL(3,2)  NULL,
+    graded_by   INT UNSIGNED  NULL,
+    updated_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_grades_course_student (course_id, student_id),
+    CONSTRAINT fk_grades_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT fk_grades_student FOREIGN KEY (student_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_grades_by FOREIGN KEY (graded_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;

@@ -2,10 +2,20 @@
 // Student dashboard. Signed-out visitors go to sign in; faculty and admins go to their own dashboards.
 require __DIR__ . '/api/bootstrap.php';
 require __DIR__ . '/includes/app_shell.php';
-require __DIR__ . '/includes/content.php';
+require __DIR__ . '/includes/academics.php';
 
 $user = require_page_role('student');
 
+// Everything below is this student's real data
+$myCourses = student_courses((int) $user['id']);
+$gpa = gpa($myCourses);
+[$where, $params] = scoped($user, 'a.due_date >= CURDATE()');
+$assignmentsDue = content_items('assignments', $where, $params);
+[$where, $params] = scoped($user, 'a.exam_date >= CURDATE()');
+$upcomingExams = content_items('exams', $where, $params);
+$recentGrades = array_filter($myCourses, fn($c) => $c['midterm'] !== null || $c['final'] !== null);
+usort($recentGrades, fn($a, $b) => strcmp((string) $b['graded_at'], (string) $a['graded_at']));
+$recentGrades = array_slice($recentGrades, 0, 5);
 $latestAnnouncements = content_items('announcements', '', [], 3);
 $upcomingEvents = content_items('events', 'a.event_date >= CURDATE()', [], 3);
 
@@ -19,6 +29,16 @@ $quickLinks = [
     ['pages/communication/office-hours.php', 'fa-video', 'Office Hours'],
 ];
 $allowed = allowed_pages('student');
+
+// Card header with a "View all" link
+$cardHeader = function (string $icon, string $title, string $href) {
+    ?>
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid <?= e($icon) ?>" style="color: var(--primary);"></i> <?= e($title) ?></div>
+                            <a href="<?= e($href) ?>" class="card-link">View all</a>
+                        </div>
+    <?php
+};
 
 app_page_start($user, 'index.php', 'Dashboard');
 ?>
@@ -34,29 +54,61 @@ app_page_start($user, 'index.php', 'Dashboard');
 
 <?php
 app_stats([
-    ['fa-book', 'primary', '0', 'Courses enrolled'],
-    ['fa-tasks', 'warning', '0', 'Assignments due'],
-    ['fa-chart-line', 'success', '—', 'Current GPA'],
-    ['fa-file-alt', 'secondary', '0', 'Upcoming exams'],
+    ['fa-book', 'primary', (string) count($myCourses), 'Courses enrolled'],
+    ['fa-tasks', 'warning', (string) count($assignmentsDue), 'Assignments due'],
+    ['fa-chart-line', 'success', $gpa === null ? '—' : number_format($gpa, 2), 'Current GPA'],
+    ['fa-file-alt', 'secondary', (string) count($upcomingExams), 'Upcoming exams'],
 ]);
 ?>
             <div class="dashboard-columns">
                 <div>
-<?php
-app_empty_card('fa-calendar-day', "Today's Schedule", 'fa-calendar-xmark', 'No classes today',
-    'Your classes will appear here once you are enrolled.');
-app_table_card('fa-chart-bar', 'Recent Grades', ['Course', 'Assessment', 'Grade', 'Date'], 'fa-chart-bar', 'No grades yet',
-    'Grades appear here once your instructors post them.');
-?>
+                    <section class="card section-gap">
+                        <?php $cardHeader('fa-calendar-day', 'My Classes', 'pages/academics/schedule.php'); ?>
+                        <?php class_list($myCourses); ?>
+                    </section>
+
+                    <section class="card section-gap">
+                        <?php $cardHeader('fa-tasks', 'Upcoming Assignments', 'pages/academics/assignments.php'); ?>
+                        <?php assignment_list($user, array_slice($assignmentsDue, 0, 4), true, 'No assignments due', 'Assignments from your courses will appear here.'); ?>
+                    </section>
+
+                    <section class="card section-gap">
+                        <?php $cardHeader('fa-chart-bar', 'Recent Grades', 'pages/academics/grades.php'); ?>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Course</th><th>Midterm</th><th>Final</th><th>Final rating</th><th>Remarks</th></tr></thead>
+                                <tbody>
+                                    <?php if (!$recentGrades): ?>
+                                    <tr><td colspan="5"><?php app_empty('fa-chart-bar', 'No grades yet', 'Grades appear here once your instructors post them.'); ?></td></tr>
+                                    <?php endif; ?>
+                                    <?php foreach ($recentGrades as $course):
+                                        $rating = final_rating($course['midterm'], $course['final']);
+                                        [$badge, $remark] = grade_remarks($rating);
+                                    ?>
+                                    <tr>
+                                        <td><strong><?= e($course['code']) ?></strong> <span class="muted"><?= e($course['title']) ?></span></td>
+                                        <td><?= e(format_grade($course['midterm'])) ?></td>
+                                        <td><?= e(format_grade($course['final'])) ?></td>
+                                        <td><strong><?= e(format_grade($rating)) ?></strong></td>
+                                        <td><span class="badge <?= $badge ?>"><?= e($remark) ?></span></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
                 <div>
                     <section class="card section-gap">
-                        <div class="card-header">
-                            <div class="card-title"><i class="fa-solid fa-bullhorn" style="color: var(--primary);"></i> Announcements</div>
-                            <a href="pages/communication/announcements.php" class="card-link">View all</a>
-                        </div>
+                        <?php $cardHeader('fa-bullhorn', 'Announcements', 'pages/communication/announcements.php'); ?>
                         <?php announcement_list($user, $latestAnnouncements, true); ?>
                     </section>
+
+                    <section class="card section-gap">
+                        <?php $cardHeader('fa-calendar-alt', 'Upcoming Exams', 'pages/academics/exams.php'); ?>
+                        <?php exam_list($user, array_slice($upcomingExams, 0, 3), true); ?>
+                    </section>
+
                     <section class="card section-gap">
                         <?php app_card_header('fa-bolt', 'Quick Links'); ?>
                         <div class="card-body">
@@ -74,11 +126,9 @@ app_table_card('fa-chart-bar', 'Recent Grades', ['Course', 'Assessment', 'Grade'
                             </div>
                         </div>
                     </section>
+
                     <section class="card section-gap">
-                        <div class="card-header">
-                            <div class="card-title"><i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Upcoming Events</div>
-                            <a href="pages/student-life/events.php" class="card-link">View all</a>
-                        </div>
+                        <?php $cardHeader('fa-calendar-check', 'Upcoming Events', 'pages/student-life/events.php'); ?>
                         <?php event_list($user, $upcomingEvents, true); ?>
                     </section>
                 </div>

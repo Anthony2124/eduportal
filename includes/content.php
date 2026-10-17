@@ -58,6 +58,7 @@ const CONTENT_TYPES = [
         'owner' => 'created_by',
         'manage' => ['admin'],
         'own_only' => [],
+        'remove_note' => 'Its enrollments, assignments, exams and grades are removed too.',
         'order' => 'a.code ASC',
         'fields' => [
             'code' => ['label' => 'Course code', 'type' => 'text', 'required' => true, 'max' => 20, 'upper' => true, 'unique' => true, 'placeholder' => 'e.g. CS 201'],
@@ -68,7 +69,89 @@ const CONTENT_TYPES = [
             'faculty_id' => ['label' => 'Faculty', 'type' => 'faculty'],
         ],
     ],
+    // Course-scoped types: faculty manage them only for courses they teach; students see the ones
+    // for courses they're enrolled in
+    'assignments' => [
+        'table' => 'assignments',
+        'label' => 'assignment',
+        'owner' => 'created_by',
+        'manage' => ['admin', 'faculty'],
+        'own_only' => [],
+        'course_scoped' => true,
+        'order' => 'a.due_date ASC, a.due_time ASC, a.id ASC',
+        'fields' => [
+            'course_id' => ['label' => 'Course', 'type' => 'course', 'required' => true],
+            'title' => ['label' => 'Title', 'type' => 'text', 'required' => true, 'max' => 150],
+            'due_date' => ['label' => 'Due date', 'type' => 'date', 'required' => true],
+            'due_time' => ['label' => 'Due time', 'type' => 'time'],
+            'instructions' => ['label' => 'Instructions', 'type' => 'textarea', 'max' => 5000],
+        ],
+    ],
+    'exams' => [
+        'table' => 'exams',
+        'label' => 'exam',
+        'owner' => 'created_by',
+        'manage' => ['admin', 'faculty'],
+        'own_only' => [],
+        'course_scoped' => true,
+        'order' => 'a.exam_date ASC, a.start_time ASC, a.id ASC',
+        'fields' => [
+            'course_id' => ['label' => 'Course', 'type' => 'course', 'required' => true],
+            'title' => ['label' => 'Exam name', 'type' => 'text', 'required' => true, 'max' => 150, 'placeholder' => 'e.g. Midterm Exam'],
+            'exam_type' => ['label' => 'Type', 'type' => 'select', 'required' => true,
+                'options' => ['Quiz', 'Prelim', 'Midterm', 'Pre-final', 'Final', 'Other']],
+            'exam_date' => ['label' => 'Date', 'type' => 'date', 'required' => true],
+            'start_time' => ['label' => 'Starts', 'type' => 'time'],
+            'end_time' => ['label' => 'Ends', 'type' => 'time'],
+            'room' => ['label' => 'Room', 'type' => 'text', 'max' => 60],
+        ],
+    ],
 ];
+
+/** Admins can work with every (existing) course; faculty only with courses assigned to them. */
+function teaches_course(array $user, int $courseId): bool
+{
+    if ($user['role'] === 'admin') {
+        $stmt = db()->prepare('SELECT 1 FROM courses WHERE id = ?');
+        $stmt->execute([$courseId]);
+    } elseif ($user['role'] === 'faculty') {
+        $stmt = db()->prepare('SELECT 1 FROM courses WHERE id = ? AND faculty_id = ?');
+        $stmt->execute([$courseId, $user['id']]);
+    } else {
+        return false;
+    }
+    return (bool) $stmt->fetchColumn();
+}
+
+/** Courses this user can manage things for (admin: all, faculty: the ones they teach). */
+function managed_courses(array $user): array
+{
+    if ($user['role'] === 'admin') {
+        return content_items('courses');
+    }
+    return $user['role'] === 'faculty' ? content_items('courses', 'a.faculty_id = ?', [$user['id']]) : [];
+}
+
+/**
+ * SQL filter (on courses alias "c") for course-scoped lists: admins see all, faculty their courses,
+ * students the courses they're enrolled in. Returns [where, params].
+ */
+function course_scope(array $user): array
+{
+    return match ($user['role']) {
+        'admin' => ['', []],
+        'faculty' => ['c.faculty_id = ?', [$user['id']]],
+        default => ['c.id IN (SELECT course_id FROM enrollments WHERE student_id = ?)', [$user['id']]],
+    };
+}
+
+/** Combines a course_scope() filter with an extra condition. */
+function scoped(array $user, string $extra = '', array $extraParams = []): array
+{
+    [$where, $params] = course_scope($user);
+    $parts = array_filter([$where, $extra]);
+    return [implode(' AND ', $parts), [...$params, ...$extraParams]];
+}
 
 /** Can this user add items of this type? */
 function can_manage_content(array $user, string $type): bool
@@ -83,6 +166,9 @@ function can_edit_content(array $user, string $type, array $item): bool
     if (!can_manage_content($user, $type)) {
         return false;
     }
+    if (!empty($def['course_scoped'])) {
+        return teaches_course($user, (int) $item['course_id']);
+    }
     if (in_array($user['role'], $def['own_only'], true)) {
         return (int) ($item[$def['owner']] ?? 0) === (int) $user['id'];
     }
@@ -96,9 +182,20 @@ function can_edit_content(array $user, string $type, array $item): bool
 function content_items(string $type, string $where = '', array $params = [], int $limit = 0): array
 {
     $def = CONTENT_TYPES[$type];
-    $person = $type === 'courses' ? 'faculty_id' : $def['owner'];
-    $sql = "SELECT a.*, CONCAT(u.first_name, ' ', u.last_name) AS person_name
-            FROM {$def['table']} a LEFT JOIN users u ON u.id = a.{$person}"
+    if ($type === 'courses') {
+        // faculty name + how many students are enrolled
+        $select = "a.*, CONCAT(u.first_name, ' ', u.last_name) AS person_name,
+                   (SELECT COUNT(*) FROM enrollments en WHERE en.course_id = a.id) AS enrolled";
+        $from = "courses a LEFT JOIN users u ON u.id = a.faculty_id";
+    } elseif (!empty($def['course_scoped'])) {
+        // course code/title (alias c, also used by course_scope())
+        $select = 'a.*, c.code AS course_code, c.title AS course_title, c.faculty_id AS course_faculty_id';
+        $from = "{$def['table']} a JOIN courses c ON c.id = a.course_id";
+    } else {
+        $select = "a.*, CONCAT(u.first_name, ' ', u.last_name) AS person_name";
+        $from = "{$def['table']} a LEFT JOIN users u ON u.id = a.{$def['owner']}";
+    }
+    $sql = "SELECT {$select} FROM {$from}"
         . ($where !== '' ? " WHERE {$where}" : '')
         . " ORDER BY {$def['order']}"
         . ($limit > 0 ? ' LIMIT ' . $limit : '');
@@ -119,7 +216,7 @@ function faculty_options(): array
  * Checks submitted values against the type's fields. Returns [column => value] ready to save,
  * or stops with a 422 error naming the field.
  */
-function validate_content(string $type, array $input): array
+function validate_content(array $user, string $type, array $input): array
 {
     $values = [];
     foreach (CONTENT_TYPES[$type]['fields'] as $name => $field) {
@@ -162,6 +259,18 @@ function validate_content(string $type, array $input): array
                 }
                 $value = (int) $value;
                 break;
+            case 'course':
+                // faculty can only pick courses they teach
+                if (!teaches_course($user, (int) $value)) {
+                    fail('Choose one of your courses from the list.', 422, ['field' => $name]);
+                }
+                $value = (int) $value;
+                break;
+            case 'select':
+                if (!in_array($value, $field['options'], true)) {
+                    fail("Choose a {$label} from the list.", 422, ['field' => $name]);
+                }
+                break;
             default: // text, textarea
                 if (!empty($field['upper'])) {
                     $value = mb_strtoupper($value);
@@ -173,8 +282,8 @@ function validate_content(string $type, array $input): array
         $values[$name] = $value;
     }
 
-    if ($type === 'events' && $values['start_time'] && $values['end_time'] && $values['end_time'] <= $values['start_time']) {
-        fail('The event must end after it starts.', 422, ['field' => 'end_time']);
+    if (in_array($type, ['events', 'exams'], true) && $values['start_time'] && $values['end_time'] && $values['end_time'] <= $values['start_time']) {
+        fail('It must end after it starts.', 422, ['field' => 'end_time']);
     }
     return $values;
 }
@@ -201,19 +310,19 @@ function content_actions(array $user, string $type, array $item, string $name): 
     if (!can_edit_content($user, $type, $item)) {
         return;
     }
-    $data = array_intersect_key($item, CONTENT_TYPES[$type]['fields'] + ['id' => true]);
-    if (isset($data['start_time'])) {
-        $data['start_time'] = substr((string) $data['start_time'], 0, 5);
-    }
-    if (isset($data['end_time'])) {
-        $data['end_time'] = substr((string) $data['end_time'], 0, 5);
+    $fields = CONTENT_TYPES[$type]['fields'];
+    $data = array_intersect_key($item, $fields + ['id' => true]);
+    foreach ($fields as $field => $spec) {
+        if ($spec['type'] === 'time' && isset($data[$field])) {
+            $data[$field] = substr((string) $data[$field], 0, 5); // "14:30:00" -> "14:30" for the time box
+        }
     }
     ?>
                             <div class="content-actions">
                                 <button type="button" class="btn btn-outline btn-sm" data-content-edit="<?= e($type) ?>" data-item="<?= e(json_encode($data)) ?>">
                                     <i class="fa-solid fa-pen"></i> Edit
                                 </button>
-                                <button type="button" class="btn btn-outline btn-sm content-remove" data-content-delete="<?= e($type) ?>" data-id="<?= (int) $item['id'] ?>" data-name="<?= e($name) ?>">
+                                <button type="button" class="btn btn-outline btn-sm content-remove" data-content-delete="<?= e($type) ?>" data-id="<?= (int) $item['id'] ?>" data-name="<?= e($name) ?>" data-note="<?= e(CONTENT_TYPES[$type]['remove_note'] ?? '') ?>">
                                     <i class="fa-regular fa-trash-can"></i> Remove
                                 </button>
                             </div>
@@ -247,7 +356,9 @@ function content_form(array $user, string $type): void
         return;
     }
     $def = CONTENT_TYPES[$type];
-    $faculty = array_filter($def['fields'], fn($f) => $f['type'] === 'faculty') ? faculty_options() : [];
+    $types = array_column($def['fields'], 'type');
+    $faculty = in_array('faculty', $types, true) ? faculty_options() : [];
+    $courses = in_array('course', $types, true) ? managed_courses($user) : [];
     ?>
             <div class="modal-overlay" id="content-modal-<?= e($type) ?>" data-content-modal="<?= e($type) ?>">
                 <div class="modal" role="dialog" aria-modal="true" aria-labelledby="content-modal-title-<?= e($type) ?>">
@@ -276,6 +387,23 @@ function content_form(array $user, string $type): void
                                 <?php if (!$faculty): ?>
                                 <div class="field-note">No faculty accounts yet. Add them on the Admin dashboard first.</div>
                                 <?php endif; ?>
+                                <?php elseif ($field['type'] === 'course'): ?>
+                                <select class="form-select" id="<?= e($id) ?>" name="<?= e($name) ?>">
+                                    <option value="">Select a course</option>
+                                    <?php foreach ($courses as $course): ?>
+                                    <option value="<?= (int) $course['id'] ?>"><?= e($course['code'] . ' - ' . $course['title']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php if (!$courses): ?>
+                                <div class="field-note"><?= $user['role'] === 'faculty' ? 'No courses are assigned to you yet. Ask the admin to assign you a course.' : 'No courses yet. Add one on the Courses page first.' ?></div>
+                                <?php endif; ?>
+                                <?php elseif ($field['type'] === 'select'): ?>
+                                <select class="form-select" id="<?= e($id) ?>" name="<?= e($name) ?>">
+                                    <option value="">Select</option>
+                                    <?php foreach ($field['options'] as $option): ?>
+                                    <option><?= e($option) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                                 <?php else: ?>
                                 <input class="form-control" id="<?= e($id) ?>" name="<?= e($name) ?>"
                                        type="<?= e($field['type']) ?>"
@@ -408,7 +536,7 @@ function scholarship_list(array $user, array $items): void
 function course_table(array $user, array $items, bool $showActions, string $emptyTitle, string $emptyText): void
 {
     $showActions = $showActions && can_manage_content($user, 'courses');
-    $columns = ['Code', 'Course', 'Units', 'Schedule', 'Room', 'Faculty'];
+    $columns = ['Code', 'Course', 'Units', 'Schedule', 'Room', 'Faculty', 'Students'];
     $orDash = fn(?string $value, string $dash = '—') => ($value ?? '') !== '' ? e($value) : $dash;
     ?>
                 <div class="table-responsive">
@@ -433,6 +561,7 @@ function course_table(array $user, array $items, bool $showActions, string $empt
                                 <td class="muted"><?= $orDash($item['schedule']) ?></td>
                                 <td class="muted"><?= $orDash($item['room']) ?></td>
                                 <td class="muted"><?= $orDash($item['person_name'], 'Not assigned') ?></td>
+                                <td><span class="badge badge-outline"><?= (int) ($item['enrolled'] ?? 0) ?></span></td>
                                 <?php if ($showActions): ?>
                                 <td style="text-align: right;"><?php content_actions($user, 'courses', $item, $item['code'] . ' ' . $item['title']); ?></td>
                                 <?php endif; ?>
@@ -440,6 +569,91 @@ function course_table(array $user, array $items, bool $showActions, string $empt
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+    <?php
+}
+
+/** "Due in 3 days" / "Due today" / "Past due" badge for an assignment. */
+function due_badge(string $dueDate): array
+{
+    $days = (int) round((strtotime($dueDate) - strtotime(date('Y-m-d'))) / 86400);
+    return match (true) {
+        $days < 0 => ['badge-danger', 'Past due'],
+        $days === 0 => ['badge-warning', 'Due today'],
+        $days === 1 => ['badge-warning', 'Due tomorrow'],
+        $days <= 3 => ['badge-warning', "Due in {$days} days"],
+        default => ['badge-primary', "Due in {$days} days"],
+    };
+}
+
+function assignment_list(array $user, array $items, bool $compact = false, string $emptyTitle = 'No assignments yet',
+                         string $emptyText = 'Assignments from your courses will appear here.'): void
+{
+    if (!$items) {
+        app_empty('fa-clipboard-list', $emptyTitle, $emptyText);
+        return;
+    }
+    ?>
+                <div class="content-list<?= $compact ? ' compact' : '' ?>">
+                    <?php foreach ($items as $item):
+                        [$badgeClass, $badgeText] = due_badge($item['due_date']);
+                        $due = format_date($item['due_date'], 'D, M j, Y') . ($item['due_time'] ? ' at ' . date('g:i A', strtotime($item['due_time'])) : '');
+                    ?>
+                    <article class="content-item">
+                        <div class="content-item-head">
+                            <div>
+                                <h3 class="content-item-title"><?= e($item['title']) ?></h3>
+                                <div class="content-meta">
+                                    <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e($item['course_code']) ?></span>
+                                    <span><i class="fa-regular fa-calendar"></i> Due <?= e($due) ?></span>
+                                    <span class="badge <?= $badgeClass ?>"><?= e($badgeText) ?></span>
+                                </div>
+                            </div>
+                            <?php if (!$compact) content_actions($user, 'assignments', $item, $item['title']); ?>
+                        </div>
+                        <?php if (!$compact && $item['instructions']): ?>
+                        <div class="content-body"><?= nl2br(e($item['instructions'])) ?></div>
+                        <?php endif; ?>
+                    </article>
+                    <?php endforeach; ?>
+                </div>
+    <?php
+}
+
+function exam_list(array $user, array $items, bool $compact = false, string $emptyTitle = 'No exams scheduled',
+                   string $emptyText = "Exam schedules appear here once they're released."): void
+{
+    if (!$items) {
+        app_empty('fa-calendar-xmark', $emptyTitle, $emptyText);
+        return;
+    }
+    ?>
+                <div class="content-list<?= $compact ? ' compact' : '' ?>">
+                    <?php foreach ($items as $item): ?>
+                    <article class="content-item event-item">
+                        <div class="date-badge">
+                            <span><?= e(format_date($item['exam_date'], 'M')) ?></span>
+                            <strong><?= e(format_date($item['exam_date'], 'j')) ?></strong>
+                        </div>
+                        <div class="content-item-main">
+                            <div class="content-item-head">
+                                <div>
+                                    <h3 class="content-item-title"><?= e($item['title']) ?></h3>
+                                    <div class="content-meta">
+                                        <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e($item['course_code']) ?></span>
+                                        <span class="badge badge-primary"><?= e($item['exam_type']) ?></span>
+                                        <span><i class="fa-regular fa-calendar"></i> <?= e(format_date($item['exam_date'], 'l, M j, Y')) ?></span>
+                                        <span><i class="fa-regular fa-clock"></i> <?= e(format_time_range($item['start_time'], $item['end_time'])) ?></span>
+                                        <?php if ($item['room']): ?>
+                                        <span><i class="fa-solid fa-door-open"></i> <?= e($item['room']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <?php if (!$compact) content_actions($user, 'exams', $item, $item['title']); ?>
+                            </div>
+                        </div>
+                    </article>
+                    <?php endforeach; ?>
                 </div>
     <?php
 }

@@ -46,7 +46,7 @@ function find_content(string $type, int $id): array
 function save_content(array $user, string $type, array $input): never
 {
     $def = CONTENT_TYPES[$type];
-    $values = validate_content($type, $input);
+    $values = validate_content($user, $type, $input);
     $id = (int) ($input['id'] ?? 0);
 
     // Fields that must be different for every item (e.g. course code)

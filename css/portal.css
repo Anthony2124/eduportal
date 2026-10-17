@@ -604,3 +604,36 @@ html {
     grid-template-columns: 1fr;
   }
 }
+
+/* Card header that also holds a course picker and buttons (Enrollment, Grades) */
+.card-header-wrap {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.course-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.course-picker label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+
+.course-picker .form-select {
+  width: auto;
+  max-width: 320px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+}

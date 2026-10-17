@@ -8,6 +8,11 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 - Every page shares one sidebar and top bar, and each role only sees (and can only open) its own pages.
 - **Add / Edit / Remove:** the Admin manages Courses (and assigns faculty), Events and Scholarships;
   the Admin and Faculty post Announcements (Faculty can change only their own). Everything is saved in MySQL.
+- **Classes:** on **Enrollment** the Admin or the course's Faculty adds students to a course. Faculty then post
+  **Assignments** and **Exams** and enter **Grades** for their own courses; the Admin can do this for every course.
+  Students see only the courses they're enrolled in: their schedule, assignments, exams, grades and GPA.
+- **Grades** use the 1.00–5.00 scale: 1.00 is the highest, 3.00 the lowest passing grade, 5.00 failed.
+  The final rating is the average of the midterm and final grades, and the GPA is weighted by units.
 
 ## Run it on your computer
 
@@ -28,8 +33,8 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 
 1. In the `eduportal` folder, run `git pull`.
 2. Then import `database/upgrade.sql` in phpMyAdmin (**Import**). It adds any new tables and keeps your existing
-   accounts and data, and it is safe to import more than once. Skipping it makes pages like Courses or Events show
-   a database error after an update that added tables.
+   accounts and data, and it is safe to import more than once. Skipping it makes pages like Courses or Grades show
+   a database error after an update that added tables (the Enrollment, Assignments, Exams and Grades update did).
 
 ## Where things are
 
@@ -41,7 +46,8 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 | `includes/app_shell.php`, `css/app-shell.css` | The shared sidebar and top bar |
 | `api/auth.php` | Sign-in, sign-up and verification codes |
 | `api/admin.php` | Admin actions (create faculty, delete accounts) |
-| `includes/content.php`, `api/content.php`, `js/content.js` | Add / Edit / Remove for courses, events, scholarships and announcements (fields and permissions are in `CONTENT_TYPES`) |
+| `includes/content.php`, `api/content.php`, `js/content.js` | Add / Edit / Remove for courses, assignments, exams, events, scholarships and announcements (fields and permissions are in `CONTENT_TYPES`) |
+| `includes/academics.php`, `api/academics.php` | Enrollment and grades (rosters, GPA, the grading scale) |
 | `api/bootstrap.php` | Shared setup, and `ROLE_PAGES`: which pages each role can open |
 | `api/config.php` | Your settings (not in git; copy from `api/config.example.php`) |
 | `database/` | Database setup and upgrade scripts |

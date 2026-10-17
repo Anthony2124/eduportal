@@ -121,6 +121,15 @@ function initSidebar() {
 
   if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
   if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+  // Remember how far the menu is scrolled; the next page opens it at the same place (see app_sidebar())
+  if (sidebar) {
+    window.addEventListener('pagehide', () => {
+      try {
+        sessionStorage.setItem('eduportal-sidebar-scroll', String(sidebar.scrollTop));
+      } catch (e) { /* storage blocked */ }
+    });
+  }
 }
 
 // Dropdown menus (.dropdown-container + .dropdown-trigger), e.g. the account menu in the top bar

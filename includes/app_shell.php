@@ -112,6 +112,24 @@ function app_sidebar(array $user, string $current): void
             <?php app_nav_link($root . 'logout.php', 'fa-right-from-bracket', 'Logout', false); ?>
         </div>
     </aside>
+    <script>
+        // Open the menu scrolled to where it was on the previous page (saved by js/main.js) and keep the current
+        // page's link in view. Runs right here, before the page is shown, so the menu doesn't jump back to the top.
+        (function () {
+            var sidebar = document.getElementById('sidebar');
+            try {
+                sidebar.scrollTop = Number(sessionStorage.getItem('eduportal-sidebar-scroll')) || 0;
+            } catch (e) { /* storage blocked: start at the top */ }
+            var active = sidebar.querySelector('.app-nav .active');
+            if (!active) return;
+            var link = active.getBoundingClientRect(), menu = sidebar.getBoundingClientRect();
+            if (link.top < menu.top) {
+                sidebar.scrollTop -= menu.top - link.top + 16;
+            } else if (link.bottom > menu.bottom) {
+                sidebar.scrollTop += link.bottom - menu.bottom + 16;
+            }
+        })();
+    </script>
     <?php
 }
 
@@ -224,7 +242,7 @@ function app_page_end(array $scripts = []): void
         </main>
     </div>
 
-    <script src="<?= e(site_root()) ?>js/main.js?v=11"></script>
+    <script src="<?= e(site_root()) ?>js/main.js?v=12"></script>
     <script src="<?= e(site_root()) ?>js/content.js?v=3"></script>
     <?php foreach ($scripts as $script): ?>
     <script src="<?= e(site_root() . $script) ?>"></script>

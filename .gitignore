@@ -1,0 +1,9 @@
+# Real settings (database login, Gmail App Password) - copy api/config.example.php instead
+api/config.php
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

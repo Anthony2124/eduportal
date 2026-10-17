@@ -1,0 +1,7 @@
+# Make the browser check for a newer copy of pages, scripts and styles every time,
+# so edits show up on the next refresh instead of an old saved copy being reused.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|js|css)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>

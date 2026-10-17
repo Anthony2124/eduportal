@@ -1,0 +1,264 @@
+/* Faculty & Admin dashboards (faculty.php, admin.php). Builds on css/style.css. */
+
+html {
+  scroll-behavior: smooth;
+}
+
+[id] {
+  scroll-margin-top: calc(var(--top-nav-height) + 16px);
+}
+
+/* Welcome banner */
+.staff-banner {
+  background: linear-gradient(135deg, #312E81 0%, #4F46E5 60%, #06B6D4 100%);
+  color: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.staff-banner h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.staff-banner p {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.93rem;
+}
+
+.banner-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.banner-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+/* Stat tiles */
+.stat-tile {
+  background: var(--white);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-xs);
+}
+
+.stat-tile-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.stat-tile-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--dark);
+  line-height: 1.1;
+}
+
+.stat-tile-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.tone-primary { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+.tone-secondary { background: rgba(6, 182, 212, 0.12); color: #0891b2; }
+.tone-success { background: rgba(16, 185, 129, 0.12); color: #059669; }
+.tone-warning { background: rgba(245, 158, 11, 0.14); color: #d97706; }
+.tone-danger { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+
+.section-gap {
+  margin-bottom: 24px;
+}
+
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: start;
+}
+
+.card-subtitle {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* People in tables */
+.person-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.person-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.person-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.person-name {
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.person-sub {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+.muted {
+  color: var(--gray-500);
+  font-size: 0.84rem;
+}
+
+.nowrap,
+.card-header .badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gray-500);
+  font-size: 0.9rem;
+}
+
+.empty-state i {
+  display: block;
+  font-size: 2rem;
+  color: var(--gray-300);
+  margin-bottom: 10px;
+}
+
+/* Table toolbar (filters) inside a card */
+.table-toolbar {
+  padding: 16px 22px 0;
+}
+
+.table-toolbar .filter-tabs {
+  margin-bottom: 16px;
+}
+
+/* Add Faculty form */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.form-error {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Quick actions list */
+.quick-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: var(--gray-700);
+}
+
+.quick-list .stat-tile-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 0.95rem;
+  border-radius: var(--radius-sm);
+}
+
+.quick-list strong {
+  display: block;
+  color: var(--dark);
+}
+
+/* Confirm dialog text (layout comes from style.css) */
+.modal-body {
+  color: var(--gray-700);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .staff-banner {
+    padding: 22px 20px;
+  }
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .hide-mobile {
+    display: none;
+  }
+}

@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - EduPortal</title>
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #818CF8;
+            --primary-dark: #3730A3;
+            --secondary: #06B6D4;
+            --accent: #F59E0B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --dark: #1E293B;
+            --gray-700: #334155;
+            --gray-600: #475569;
+            --gray-500: #64748B;
+            --gray-400: #94A3B8;
+            --gray-300: #CBD5E1;
+            --gray-200: #E2E8F0;
+            --gray-100: #F1F5F9;
+            --light: #F8FAFC;
+            --white: #FFFFFF;
+            --sidebar-bg: #1E293B;
+            --sidebar-text: #CBD5E1;
+            --sidebar-active: #4F46E5;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background-color: var(--light);
+            color: var(--dark);
+            display: flex;
+            align-items: stretch;
+            overflow-x: hidden;
+        }
+
+        /* Split Screen Container */
+        .login-wrapper {
+            display: flex;
+            width: 100vw;
+            min-height: 100vh;
+        }
+
+        /* LEFT PANEL: Decorative & Branding */
+        .left-panel {
+            flex: 1.1;
+            position: relative;
+            background: linear-gradient(135deg, #1E293B 0%, #312E81 25%, #4F46E5 65%, #06B6D4 100%);
+            color: var(--white);
+            padding: 3.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Abstract Decorative Shapes */
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.45;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulseShape 8s ease-in-out infinite alternate;
+        }
+
+        .shape-1 {
+            width: 380px;
+            height: 380px;
+            background: #06B6D4;
+            top: -60px;
+            right: -60px;
+        }
+
+        .shape-2 {
+            width: 420px;
+            height: 420px;
+            background: #4F46E5;
+            bottom: -80px;
+            left: -80px;
+            animation-delay: -3s;
+        }
+
+        .shape-3 {
+            width: 260px;
+            height: 260px;
+            background: #818CF8;
+            top: 40%;
+            left: 20%;
+            opacity: 0.3;
+            animation-delay: -5s;
+        }
+
+        /* Decorative Grid Mesh */
+        .grid-mesh {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+            background-size: 28px 28px;
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Decorative Circles (Geometric) */
+        .geometric-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.22);
+            pointer-events: none;
+            z-index: 0;
+            animation: rotateSlow 40s linear infinite;
+        }
+
+        .circle-lg {
+            width: 520px;
+            height: 520px;
+            right: -150px;
+            top: 20%;
+        }
+
+        .circle-sm {
+            width: 240px;
+            height: 240px;
+            left: 10%;
+            bottom: 15%;
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Left Panel Content Elements */
+        .left-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .brand-logo-icon {
+            width: 54px;
+            height: 54px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #FFFFFF;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .brand-title-wrap {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .brand-name span {
+            color: var(--secondary);
+        }
+
+        .brand-badge {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        .hero-messaging {
+            max-width: 520px;
+            margin-top: 1.5rem;
+        }
+
+        .hero-tagline {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.03em;
+            color: #FFFFFF;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-tagline .highlight {
+            background: linear-gradient(120deg, #A5F3FC, #FFFFFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.05rem;
+            line-height: 1.65;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        /* Floating Stat Cards Area */
+        .stats-showcase {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin: 2rem 0;
+            max-width: 440px;
+        }
+
+        .floating-stat-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 18px;
+            padding: 1.15rem 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .floating-stat-card:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateX(6px) translateY(-2px);
+        }
+
+        .stat-card-1 {
+            animation: floatSlow 5s ease-in-out infinite alternate;
+        }
+
+        .stat-card-2 {
+            margin-left: 2rem;
+            animation: floatSlow 6s ease-in-out infinite alternate 1.5s;
+        }
+
+        .stat-card-3 {
+            margin-left: 0.75rem;
+            animation: floatSlow 5.5s ease-in-out infinite alternate 3s;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.students {
+            background: rgba(6, 182, 212, 0.25);
+            color: #67E8F9;
+            border: 1px solid rgba(6, 182, 212, 0.4);
+        }
+
+        .stat-icon.courses {
+            background: rgba(245, 158, 11, 0.25);
+            color: #FDE68A;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .stat-icon.satisfaction {
+            background: rgba(16, 185, 129, 0.25);
+            color: #6EE7B7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .stat-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.01em;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 400;
+        }
+
+        /* Left Panel Footer */
+        .left-footer {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .left-footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .left-footer a:hover {
+            color: #FFFFFF;
+        }
+
+        /* RIGHT PANEL: Form Container */
+        .right-panel {
+            flex: 1;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem 4.5rem;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .form-wrapper {
+            width: 100%;
+            max-width: 440px;
+            margin: auto;
+            padding: 1.5rem 0;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Mobile Logo (hidden by default on desktop) */
+        .mobile-brand {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .mobile-brand-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            color: var(--white);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .mobile-brand-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .mobile-brand-title span {
+            color: var(--primary);
+        }
+
+        /* Header in Right Panel */
+        .form-header {
+            margin-bottom: 2rem;
+        }
+
+        .form-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--dark);
+            letter-spacing: -0.025em;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-subtitle {
+            font-size: 0.95rem;
+            color: var(--gray-500);
+            line-height: 1.5;
+        }
+
+        /* Demo-mode Notice (shown only when Google / EmailJS keys are not set) */
+        .notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            background: #FFFBEB;
+            color: #92400E;
+            border: 1px dashed #FCD34D;
+            border-radius: 12px;
+            padding: 0.75rem 0.95rem;
+            font-size: 0.825rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .notice i {
+            color: var(--accent);
+            margin-top: 0.15rem;
+        }
+
+        .notice strong {
+            letter-spacing: 0.15em;
+        }
+
+        /* Sign-up Progress Stepper */
+        .signup-stepper {
+            display: none;
+            align-items: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .signup-stepper.active {
+            display: flex;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-400);
+            white-space: nowrap;
+        }
+
+        .step-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--gray-200);
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .step-line {
+            flex: 1;
+            height: 2px;
+            min-width: 12px;
+            margin: 0 0.6rem;
+            background: var(--gray-200);
+            transition: var(--transition);
+        }
+
+        .step.current {
+            color: var(--primary);
+        }
+
+        .step.current .step-dot {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .step.done {
+            color: var(--success);
+        }
+
+        .step.done .step-dot {
+            border-color: var(--success);
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .step-line.done {
+            background: var(--success);
+        }
+
+        /* Role Picker (Admin / Faculty / Student) */
+        .role-switch {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.65rem;
+            margin-bottom: 1.6rem;
+        }
+
+        .role-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.85rem 0.5rem;
+            background: var(--light);
+            border: 1.5px solid var(--gray-200);
+            border-radius: 14px;
+            color: var(--gray-600);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .role-option i {
+            font-size: 1.25rem;
+            color: var(--gray-400);
+            transition: var(--transition);
+        }
+
+        .role-option:hover {
+            border-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .role-option.active {
+            background: #EEF2FF;
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+        }
+
+        .role-option.active i {
+            color: var(--primary);
+        }
+
+        /* Fields that only apply to some roles are toggled with the hidden attribute */
+        [hidden] {
+            display: none !important;
+        }
+
+        /* Form Controls */
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.35rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            position: relative;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            color: var(--gray-400);
+            font-size: 1.05rem;
+            pointer-events: none;
+            transition: color 0.2s ease;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 1rem 0 2.75rem;
+            background: var(--light);
+            border: 1.5px solid var(--gray-200);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: var(--dark);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-input::placeholder {
+            color: var(--gray-400);
+            font-weight: 400;
+        }
+
+        .form-input:focus {
+            background: var(--white);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+        }
+
+        .input-group:focus-within .input-icon {
+            color: var(--primary);
+        }
+
+        select.form-input {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            padding-right: 2.5rem;
+        }
+
+        /* Re-applied on focus/error because those states reset the background shorthand */
+        select.form-input,
+        select.form-input:focus,
+        select.form-input.has-error {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+
+        select.form-input:invalid {
+            color: var(--gray-400);
+        }
+
+        select.form-input option {
+            color: var(--dark);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-row > .form-group {
+            min-width: 0;
+        }
+
+        .form-row.wide-first {
+            grid-template-columns: 2fr 1fr;
+        }
+
+        .field-hint {
+            font-size: 0.775rem;
+            color: var(--gray-400);
+        }
+
+        .form-input.has-error {
+            border-color: var(--danger);
+            background: #FEF2F2;
+        }
+
+        .form-input.has-error:focus {
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        }
+
+        .error-message {
+            font-size: 0.775rem;
+            color: var(--danger);
+            display: none;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.25rem;
+        }
+
+        .error-message.show {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        /* Password Eye Toggle */
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--gray-400);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--gray-700);
+            background: var(--gray-100);
+        }
+
+        .has-toggle {
+            padding-right: 3rem;
+        }
+
+        /* Checkbox & Forgot Link Row */
+        .form-options {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-top: -0.25rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            color: var(--gray-600);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-input {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .checkbox-label a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .checkbox-label a:hover {
+            text-decoration: underline;
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        /* Primary Submit Button */
+        .btn-submit {
+            width: 100%;
+            height: 48px;
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transition: var(--transition);
+            margin-top: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.75rem 0 1.25rem 0;
+            color: var(--gray-400);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--gray-200);
+        }
+
+        .divider span {
+            padding: 0 1rem;
+            color: var(--gray-400);
+            font-weight: 500;
+        }
+
+        /* Google Button Slot (rendered by Google Identity Services) */
+        .google-btn-slot {
+            display: flex;
+            justify-content: center;
+            min-height: 44px;
+        }
+
+        /* Link Google Step */
+        .google-step {
+            text-align: center;
+        }
+
+        .google-icon-wrap {
+            width: 72px;
+            height: 72px;
+            background: var(--white);
+            border: 1.5px solid var(--gray-200);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem auto;
+            box-shadow: 0 0 0 10px rgba(234, 67, 53, 0.06);
+        }
+
+        .google-icon-wrap i {
+            color: #EA4335;
+        }
+
+        .google-step .auth-form {
+            text-align: left;
+            margin-top: 1rem;
+        }
+
+        .linked-account {
+            display: none;
+            align-items: center;
+            gap: 0.85rem;
+            background: var(--light);
+            border: 1.5px solid var(--gray-200);
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            text-align: left;
+            margin-bottom: 1.25rem;
+        }
+
+        .linked-account.show {
+            display: flex;
+        }
+
+        .linked-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: var(--white);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .linked-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .linked-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .linked-name {
+            font-weight: 700;
+            font-size: 0.925rem;
+            color: var(--dark);
+        }
+
+        .linked-email {
+            font-size: 0.825rem;
+            color: var(--gray-500);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .linked-status {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        /* Footer Prompt */
+        .form-footer-prompt {
+            text-align: center;
+            margin-top: 1.75rem;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        .form-footer-prompt a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-footer-prompt a:hover {
+            text-decoration: underline;
+        }
+
+        /* Copyright Footer */
+        .right-footer {
+            text-align: center;
+            padding-top: 1.5rem;
+            font-size: 0.825rem;
+            color: var(--gray-400);
+        }
+
+        /* AUTH VIEWS (only the active one is shown) */
+        .auth-view {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .auth-view.active {
+            display: block;
+        }
+
+        .twofa-card {
+            text-align: center;
+        }
+
+        .twofa-icon-wrap {
+            width: 72px;
+            height: 72px;
+            background: #EEF2FF;
+            color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem auto;
+            box-shadow: 0 0 0 10px rgba(79, 70, 229, 0.08);
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        .twofa-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .twofa-desc {
+            font-size: 0.925rem;
+            color: var(--gray-500);
+            margin-bottom: 1.75rem;
+            line-height: 1.5;
+        }
+
+        .twofa-desc strong {
+            color: var(--gray-700);
+        }
+
+        /* 6-Digit OTP Inputs */
+        .otp-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 0.55rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .otp-box {
+            width: 48px;
+            height: 56px;
+            border: 2px solid var(--gray-200);
+            background: var(--light);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .otp-box:focus {
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+            transform: scale(1.05);
+        }
+
+        .otp-box.filled {
+            border-color: var(--primary-light);
+            background: #F5F3FF;
+        }
+
+        .twofa-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .resend-row {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-top: 0.5rem;
+        }
+
+        .resend-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .resend-link.disabled {
+            color: var(--gray-400);
+            cursor: not-allowed;
+            pointer-events: none;
+            text-decoration: none;
+        }
+
+        .btn-back-login {
+            background: transparent;
+            border: none;
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .btn-back-login:hover {
+            color: var(--dark);
+        }
+
+        /* Alert Notification */
+        .toast-alert {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: var(--dark);
+            color: var(--white);
+            padding: 1rem 1.4rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateY(-80px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .toast-alert.show {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast-alert.success {
+            background: var(--success);
+        }
+
+        .toast-alert.error {
+            background: var(--danger);
+        }
+
+        .toast-alert.info {
+            background: var(--primary);
+        }
+
+        /* KEYFRAME ANIMATIONS */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes floatSlow {
+            0% {
+                transform: translateY(0px);
+            }
+            100% {
+                transform: translateY(-9px);
+            }
+        }
+
+        @keyframes pulseShape {
+            0% {
+                transform: scale(1) translate(0, 0);
+            }
+            100% {
+                transform: scale(1.12) translate(15px, -15px);
+            }
+        }
+
+        @keyframes rotateSlow {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* RESPONSIVE DESIGN */
+        @media (max-width: 1024px) {
+            .left-panel {
+                padding: 2.5rem;
+            }
+            .hero-tagline {
+                font-size: 2.1rem;
+            }
+            .right-panel {
+                padding: 2.5rem;
+            }
+            .stats-showcase {
+                max-width: 100%;
+            }
+            .stat-card-2 {
+                margin-left: 1rem;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .left-panel {
+                display: none; /* Hide left decorative panel on mobile / tablet portrait */
+            }
+
+            .right-panel {
+                padding: 2rem 1.5rem;
+                justify-content: center;
+            }
+
+            .mobile-brand {
+                display: flex;
+            }
+
+            .form-wrapper {
+                max-width: 400px;
+            }
+
+            .otp-box {
+                width: 42px;
+                height: 50px;
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .form-row,
+            .form-row.wide-first {
+                grid-template-columns: 1fr;
+            }
+
+            .step-label {
+                display: none;
+            }
+
+            .otp-inputs {
+                gap: 0.35rem;
+            }
+
+            .otp-box {
+                width: 38px;
+                height: 48px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Split Screen Wrapper -->
+    <div class="login-wrapper">
+
+        <!-- LEFT PANEL: Decorative Branding & Stats -->
+        <aside class="left-panel">
+            <!-- Background Decorative Shapes -->
+            <div class="grid-mesh"></div>
+            <div class="bg-shape shape-1"></div>
+            <div class="bg-shape shape-2"></div>
+            <div class="bg-shape shape-3"></div>
+            <div class="geometric-circle circle-lg"></div>
+            <div class="geometric-circle circle-sm"></div>
+
+            <!-- Top Brand -->
+            <div class="left-content">
+                <div class="brand-header">
+                    <div class="brand-logo-icon">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="brand-title-wrap">
+                        <div class="brand-name">Edu<span>Portal</span></div>
+                        <div class="brand-badge">Academic Management System</div>
+                    </div>
+                </div>
+
+                <!-- Hero Tagline & Description -->
+                <div class="hero-messaging">
+                    <h1 class="hero-tagline">
+                        Your Academic Journey, <span class="highlight">Simplified.</span>
+                    </h1>
+                    <p class="hero-desc">
+                        Connect with faculty, access coursework, track assignments, and unlock campus opportunities through a centralized, intelligent student hub.
+                    </p>
+                </div>
+
+                <!-- Floating Stat Cards -->
+                <div class="stats-showcase">
+                    <!-- Stat Card 1 -->
+                    <div class="floating-stat-card stat-card-1">
+                        <div class="stat-icon students">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-value">15,000+ Students</div>
+                            <div class="stat-label">Enrolled across 12 faculties</div>
+                        </div>
+                    </div>
+
+                    <!-- Stat Card 2 -->
+                    <div class="floating-stat-card stat-card-2">
+                        <div class="stat-icon courses">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-value">500+ Courses</div>
+                            <div class="stat-label">Accredited modern curriculum</div>
+                        </div>
+                    </div>
+
+                    <!-- Stat Card 3 -->
+                    <div class="floating-stat-card stat-card-3">
+                        <div class="stat-icon satisfaction">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-value">98% Satisfaction</div>
+                            <div class="stat-label">Consistent student approval rating</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Left Footer -->
+            <div class="left-footer">
+                <span>© 2026 EduPortal University</span>
+                <span>•</span>
+                <a href="#privacy">Privacy Policy</a>
+                <span>•</span>
+                <a href="#terms">Terms of Service</a>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: Authentication Form -->
+        <main class="right-panel">
+            <div class="form-wrapper">
+
+                <!-- Mobile Brand Header (shows only on smaller devices) -->
+                <div class="mobile-brand">
+                    <div class="mobile-brand-icon">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div class="mobile-brand-title">Edu<span>Portal</span></div>
+                </div>
+
+                <!-- SIGN-UP PROGRESS (visible only while creating an account) -->
+                <div class="signup-stepper" id="signupStepper" aria-label="Account creation progress">
+                    <div class="step" data-step="1">
+                        <span class="step-dot">1</span>
+                        <span class="step-label">Details</span>
+                    </div>
+                    <div class="step-line" data-line="1"></div>
+                    <div class="step" data-step="2">
+                        <span class="step-dot">2</span>
+                        <span class="step-label">Link Google</span>
+                    </div>
+                    <div class="step-line" data-line="2"></div>
+                    <div class="step" data-step="3">
+                        <span class="step-dot">3</span>
+                        <span class="step-label">Verify Gmail</span>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: SIGN IN (shown first) -->
+                <div class="auth-view active" id="loginSection">
+                    <div class="form-header">
+                        <h2 class="form-title">Welcome Back!</h2>
+                        <p class="form-subtitle" id="loginSubtitle">Sign in to your student portal to continue your classes.</p>
+                    </div>
+
+                    <!-- Who is signing in (kept in sync with the picker on Create Account) -->
+                    <div class="role-switch" role="radiogroup" aria-label="Sign in as">
+                        <button type="button" class="role-option" data-role="admin" role="radio" aria-checked="false">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Admin</span>
+                        </button>
+                        <button type="button" class="role-option" data-role="faculty" role="radio" aria-checked="false">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                            <span>Faculty</span>
+                        </button>
+                        <button type="button" class="role-option active" data-role="student" role="radio" aria-checked="true">
+                            <i class="fa-solid fa-user-graduate"></i>
+                            <span>Student</span>
+                        </button>
+                    </div>
+
+                    <form class="auth-form" id="loginForm" novalidate>
+                        <!-- ID number or Gmail -->
+                        <div class="form-group">
+                            <label for="studentId" class="form-label">
+                                <span id="loginIdLabel">Student ID or Gmail</span>
+                            </label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-envelope input-icon"></i>
+                                <input
+                                    type="text"
+                                    id="studentId"
+                                    class="form-input"
+                                    placeholder="e.g. 2026-CS-0412 or you@gmail.com"
+                                    autocomplete="username"
+                                    required
+                                >
+                            </div>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-group">
+                            <label for="password" class="form-label">
+                                <span>Password</span>
+                            </label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock input-icon"></i>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    class="form-input has-toggle"
+                                    placeholder="Enter your password"
+                                    autocomplete="current-password"
+                                    required
+                                >
+                                <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <!-- Remember Me & Forgot Password -->
+                        <div class="form-options">
+                            <label class="checkbox-label" for="rememberMe">
+                                <input type="checkbox" id="rememberMe" class="checkbox-input" checked>
+                                <span>Remember me</span>
+                            </label>
+                            <a href="#forgot" class="forgot-link" id="forgotPasswordBtn">Forgot password?</a>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn-submit" id="signInBtn">
+                            <span>Sign In</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </form>
+
+                    <!-- Google Sign-In (hidden until a Google Client ID is configured; the built-in admin has no Google account) -->
+                    <div data-roles="faculty student">
+                        <div id="googleSignInWrap" style="display: none;">
+                            <div class="divider">
+                                <span>or continue with</span>
+                            </div>
+                            <div class="google-btn-slot" id="googleSignInBtn"></div>
+                        </div>
+                    </div>
+
+                    <!-- Only students create their own accounts -->
+                    <p class="form-footer-prompt" data-roles="student">
+                        New student?
+                        <a href="#create-account" id="showSignupLink">Create an account</a>
+                    </p>
+                    <p class="form-footer-prompt" data-roles="faculty" hidden>
+                        Faculty accounts are created by the admin. Ask the admin if you don't have one yet.
+                    </p>
+                    <p class="form-footer-prompt" data-roles="admin" hidden>
+                        Sign in with the built-in admin username.
+                    </p>
+                </div>
+
+                <!-- VIEW 2: CREATE STUDENT ACCOUNT - DETAILS -->
+                <div class="auth-view" id="signupSection">
+                    <div class="form-header">
+                        <h2 class="form-title">Create your Student account</h2>
+                        <p class="form-subtitle">Fill in your details. Next, you'll link your Google account and verify your Gmail.</p>
+                    </div>
+
+                    <form class="auth-form" id="signupForm" novalidate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="firstName" class="form-label"><span>First Name</span></label>
+                                <div class="input-group">
+                                    <i class="fa-solid fa-user input-icon"></i>
+                                    <input type="text" id="firstName" class="form-input" placeholder="Juan" autocomplete="given-name" required>
+                                </div>
+                                <div class="error-message">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName" class="form-label"><span>Last Name</span></label>
+                                <div class="input-group">
+                                    <i class="fa-solid fa-user input-icon"></i>
+                                    <input type="text" id="lastName" class="form-input" placeholder="Dela Cruz" autocomplete="family-name" required>
+                                </div>
+                                <div class="error-message">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signupIdNumber" class="form-label"><span>Student ID</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-id-card input-icon"></i>
+                                <input type="text" id="signupIdNumber" class="form-input" placeholder="e.g. 2026-CS-0412" autocomplete="off" required>
+                            </div>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row wide-first">
+                            <div class="form-group">
+                                <label for="program" class="form-label"><span>Program</span></label>
+                                <div class="input-group">
+                                    <i class="fa-solid fa-book input-icon"></i>
+                                    <select id="program" class="form-input" required>
+                                        <option value="" disabled selected>Select program</option>
+                                        <option>BS Computer Science</option>
+                                        <option>BS Information Technology</option>
+                                        <option>BS Information Systems</option>
+                                        <option>BS Computer Engineering</option>
+                                        <option>BS Business Administration</option>
+                                        <option>BS Accountancy</option>
+                                        <option>BS Psychology</option>
+                                    </select>
+                                </div>
+                                <div class="error-message">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="yearLevel" class="form-label"><span>Year Level</span></label>
+                                <div class="input-group">
+                                    <i class="fa-solid fa-layer-group input-icon"></i>
+                                    <select id="yearLevel" class="form-input" required>
+                                        <option value="" disabled selected>Year</option>
+                                        <option value="1">1st Year</option>
+                                        <option value="2">2nd Year</option>
+                                        <option value="3">3rd Year</option>
+                                        <option value="4">4th Year</option>
+                                        <option value="5">5th Year</option>
+                                    </select>
+                                </div>
+                                <div class="error-message">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signupPassword" class="form-label"><span>Password</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock input-icon"></i>
+                                <input type="password" id="signupPassword" class="form-input has-toggle" placeholder="Create a password" autocomplete="new-password" required>
+                                <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <span class="field-hint">At least 8 characters, with a letter and a number.</span>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmPassword" class="form-label"><span>Confirm Password</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock input-icon"></i>
+                                <input type="password" id="confirmPassword" class="form-input has-toggle" placeholder="Re-enter your password" autocomplete="new-password" required>
+                                <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label" for="agreeTerms">
+                                <input type="checkbox" id="agreeTerms" class="checkbox-input">
+                                <span>I agree to the <a href="#terms">Terms of Service</a> and <a href="#privacy">Privacy Policy</a></span>
+                            </label>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="signupSubmitBtn">
+                            <span>Continue</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </form>
+
+                    <p class="form-footer-prompt">
+                        Already have an account?
+                        <a href="#sign-in" class="show-login-link">Sign in</a>
+                    </p>
+                </div>
+
+                <!-- VIEW 3: CREATE ACCOUNT - LINK GOOGLE -->
+                <div class="auth-view google-step" id="googleLinkSection">
+                    <div class="google-icon-wrap">
+                        <i class="fa-brands fa-google"></i>
+                    </div>
+                    <h2 class="twofa-title">Link your Google account</h2>
+                    <p class="twofa-desc">
+                        Choose the Google account you want to use with EduPortal.<br>
+                        We'll send a 6-digit verification code to its Gmail inbox.
+                    </p>
+
+                    <!-- Linked account preview (shown while the code is being sent) -->
+                    <div class="linked-account" id="linkedAccount">
+                        <div class="linked-avatar" id="linkedAvatar"></div>
+                        <div class="linked-info">
+                            <span class="linked-name" id="linkedName"></span>
+                            <span class="linked-email" id="linkedEmail"></span>
+                        </div>
+                        <span class="linked-status">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i> Sending code
+                        </span>
+                    </div>
+
+                    <!-- Google Identity Services button -->
+                    <div class="google-btn-slot" id="googleLinkBtn"></div>
+
+                    <!-- Fallback when no Google Client ID is configured -->
+                    <form class="auth-form" id="gmailFallbackForm" novalidate>
+                        <div class="notice">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>Demo mode: Google sign-in isn't set up yet, so enter your Gmail address manually.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="fallbackGmail" class="form-label"><span>Gmail Address</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-envelope input-icon"></i>
+                                <input type="email" id="fallbackGmail" class="form-input" placeholder="you@gmail.com" autocomplete="email" required>
+                            </div>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <span>Link Gmail &amp; Send Code</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+
+                    <div class="twofa-actions">
+                        <button type="button" class="btn-back-login" id="backToDetailsBtn">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span>Back to details</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VIEW 4: OTP VERIFICATION (used for both sign-up and sign-in) -->
+                <div class="auth-view" id="twoFactorSection">
+                    <div class="twofa-card">
+                        <div class="twofa-icon-wrap">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h2 class="twofa-title" id="otpTitle">Two-Factor Verification</h2>
+                        <p class="twofa-desc">
+                            We've sent a 6-digit verification code to<br>
+                            <strong id="maskedTargetEmail"></strong>
+                        </p>
+
+                        <!-- Demo-mode code display (only when EmailJS is not configured) -->
+                        <div class="notice" id="otpDemoNotice" style="display: none; margin-bottom: 1.5rem;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>Demo mode: email sending isn't set up yet, so your code is <strong id="otpDemoCode"></strong></span>
+                        </div>
+
+                        <!-- 6-digit inputs -->
+                        <div class="otp-inputs" id="otpContainer">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" autocomplete="one-time-code">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box">
+                        </div>
+
+                        <div class="error-message" id="otpError" style="justify-content: center; margin-bottom: 1rem;">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span id="otpErrorText"></span>
+                        </div>
+
+                        <div class="twofa-actions">
+                            <button type="button" class="btn-submit" id="verifyOtpBtn">
+                                <span id="verifyBtnText">Verify & Proceed</span>
+                                <i class="fa-solid fa-circle-check" id="verifyBtnIcon"></i>
+                            </button>
+
+                            <div class="resend-row">
+                                Didn't receive the code?
+                                <a href="#resend" class="resend-link disabled" id="resendCodeLink">Resend code</a>
+                                <span id="timerCountdown"></span>
+                            </div>
+
+                            <button type="button" class="btn-back-login" id="backFromOtpBtn">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span id="backFromOtpText">Back to Sign In</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <footer class="right-footer">
+                © 2026 EduPortal University. All rights reserved.
+            </footer>
+        </main>
+
+    </div>
+
+    <!-- Toast Notification Element -->
+    <div class="toast-alert" id="toastAlert">
+        <i class="fa-solid fa-circle-info" id="toastIcon"></i>
+        <span id="toastMessage">Notification message</span>
+    </div>
+
+    <!-- JavaScript Interactive Logic (accounts, Google linking and OTP are handled by api/auth.php) -->
+    <script>
+        const ID_NUMBER_PATTERN = /^[A-Z0-9-]{5,20}$/;
+        const GMAIL_PATTERN = /^[a-z0-9._%+-]+@gmail\.com$/i;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements - Views
+            const signupStepper = document.getElementById('signupStepper');
+            const loginSection = document.getElementById('loginSection');
+            const signupSection = document.getElementById('signupSection');
+            const googleLinkSection = document.getElementById('googleLinkSection');
+            const twoFactorSection = document.getElementById('twoFactorSection');
+
+            // Sign In Elements
+            const loginForm = document.getElementById('loginForm');
+            const studentIdInput = document.getElementById('studentId');
+            const passwordInput = document.getElementById('password');
+            const rememberMe = document.getElementById('rememberMe');
+            const signInBtn = document.getElementById('signInBtn');
+            const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+            const googleSignInWrap = document.getElementById('googleSignInWrap');
+            const googleSignInBtn = document.getElementById('googleSignInBtn');
+            const showSignupLink = document.getElementById('showSignupLink');
+            const loginSubtitle = document.getElementById('loginSubtitle');
+            const loginIdLabel = document.getElementById('loginIdLabel');
+
+            // Sign Up Elements (students only)
+            const signupForm = document.getElementById('signupForm');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const signupIdInput = document.getElementById('signupIdNumber');
+            const programSelect = document.getElementById('program');
+            const yearLevelSelect = document.getElementById('yearLevel');
+            const signupPasswordInput = document.getElementById('signupPassword');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const agreeTerms = document.getElementById('agreeTerms');
+            const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+
+            // Link Google Elements
+            const linkedAccount = document.getElementById('linkedAccount');
+            const linkedAvatar = document.getElementById('linkedAvatar');
+            const linkedName = document.getElementById('linkedName');
+            const linkedEmail = document.getElementById('linkedEmail');
+            const googleLinkBtn = document.getElementById('googleLinkBtn');
+            const gmailFallbackForm = document.getElementById('gmailFallbackForm');
+            const fallbackGmailInput = document.getElementById('fallbackGmail');
+            const backToDetailsBtn = document.getElementById('backToDetailsBtn');
+
+            // OTP Elements
+            const otpTitle = document.getElementById('otpTitle');
+            const otpBoxes = document.querySelectorAll('.otp-box');
+            const otpContainer = document.getElementById('otpContainer');
+            const otpDemoNotice = document.getElementById('otpDemoNotice');
+            const otpDemoCode = document.getElementById('otpDemoCode');
+            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+            const verifyBtnText = document.getElementById('verifyBtnText');
+            const verifyBtnIcon = document.getElementById('verifyBtnIcon');
+            const otpError = document.getElementById('otpError');
+            const otpErrorText = document.getElementById('otpErrorText');
+            const resendCodeLink = document.getElementById('resendCodeLink');
+            const timerCountdown = document.getElementById('timerCountdown');
+            const backFromOtpBtn = document.getElementById('backFromOtpBtn');
+            const backFromOtpText = document.getElementById('backFromOtpText');
+            const maskedTargetEmail = document.getElementById('maskedTargetEmail');
+
+            // Toast Alert
+            const toastAlert = document.getElementById('toastAlert');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMessage = document.getElementById('toastMessage');
+
+            // Flow State
+            let currentView = 'signin';
+            let otpPurpose = null;        // 'signup' | 'signin'
+            let googleClientId = '';      // set from api/config.php; empty = demo mode (type Gmail manually)
+            let googleReady = false;
+            let isVerifying = false;
+            let countdownTimer = null;
+            let toastTimer = null;
+
+            const views = {
+                signin: { el: loginSection, title: 'Sign In', step: 0 },
+                details: { el: signupSection, title: 'Create Account', step: 1 },
+                google: { el: googleLinkSection, title: 'Link Google Account', step: 2 },
+                otp: { el: twoFactorSection, title: 'Verify Code', step: 3 }
+            };
+
+            // View Switching
+            function showView(name) {
+                currentView = name;
+                Object.entries(views).forEach(([key, view]) => {
+                    view.el.classList.toggle('active', key === name);
+                });
+                document.title = `${views[name].title} - EduPortal`;
+
+                // The stepper only shows while creating an account
+                const isSignupStep = name !== 'signin' && !(name === 'otp' && otpPurpose !== 'signup');
+                updateStepper(isSignupStep ? views[name].step : 0);
+                renderGoogleButtons();
+            }
+
+            function updateStepper(current) {
+                signupStepper.classList.toggle('active', current > 0);
+                signupStepper.querySelectorAll('.step').forEach(stepEl => {
+                    const n = Number(stepEl.dataset.step);
+                    stepEl.classList.toggle('current', n === current);
+                    stepEl.classList.toggle('done', n < current);
+                    stepEl.querySelector('.step-dot').innerHTML = n < current ? '<i class="fa-solid fa-check"></i>' : n;
+                });
+                signupStepper.querySelectorAll('.step-line').forEach(line => {
+                    line.classList.toggle('done', Number(line.dataset.line) < current);
+                });
+            }
+
+            // Toast Display Helper
+            function showToast(message, type = 'info', duration = 3500) {
+                toastMessage.textContent = message;
+                toastAlert.className = `toast-alert show ${type}`;
+
+                if (type === 'success') {
+                    toastIcon.className = 'fa-solid fa-circle-check';
+                } else if (type === 'error') {
+                    toastIcon.className = 'fa-solid fa-triangle-exclamation';
+                } else {
+                    toastIcon.className = 'fa-solid fa-circle-info';
+                }
+
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toastAlert.classList.remove('show');
+                }, duration);
+            }
+
+            // Field Validation Helpers
+            function setFieldError(input, message) {
+                const errorEl = input.closest('.form-group').querySelector('.error-message');
+                input.classList.add('has-error');
+                errorEl.querySelector('span').textContent = message;
+                errorEl.classList.add('show');
+            }
+
+            function clearFieldErrors(form) {
+                form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+                form.querySelectorAll('.error-message.show').forEach(el => el.classList.remove('show'));
+            }
+
+            function shake(el) {
+                el.classList.add('shake');
+                setTimeout(() => el.classList.remove('shake'), 450);
+            }
+
+            // Clear a field's error as soon as the user edits it
+            document.querySelectorAll('.auth-form .form-input, .auth-form .checkbox-input').forEach(input => {
+                const eventName = input.tagName === 'SELECT' || input.type === 'checkbox' ? 'change' : 'input';
+                input.addEventListener(eventName, () => {
+                    input.classList.remove('has-error');
+                    const errorEl = input.closest('.form-group')?.querySelector('.error-message');
+                    if (errorEl) errorEl.classList.remove('show');
+                });
+            });
+
+            function setButtonLoading(btn, loading, loadingText) {
+                const label = btn.querySelector('span');
+                const icon = btn.querySelector('i');
+                if (loading) {
+                    btn.dataset.label = label.textContent;
+                    btn.dataset.icon = icon.className;
+                    label.textContent = loadingText;
+                    icon.className = 'fa-solid fa-circle-notch fa-spin';
+                } else {
+                    label.textContent = btn.dataset.label;
+                    icon.className = btn.dataset.icon;
+                }
+                btn.disabled = loading;
+            }
+
+            // Password Visibility Toggles
+            document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const input = btn.parentElement.querySelector('input');
+                    const isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    btn.querySelector('i').className = isPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+                });
+            });
+
+            function redirectToDashboard(delay) {
+                setTimeout(() => {
+                    window.location.href = 'index.php';
+                }, delay);
+            }
+
+            // ---------- SERVER API (api/auth.php) ----------
+            async function api(action, payload = {}) {
+                let response;
+                try {
+                    response = await fetch(`api/auth.php?action=${action}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch {
+                    throw Object.assign(new Error('Cannot reach the server. Make sure Apache is running in XAMPP.'), { data: {} });
+                }
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    if (data.detail) console.error('[EduPortal]', data.detail);
+                    throw Object.assign(new Error(data.error || `Server error (${response.status}).`), { data });
+                }
+                return data;
+            }
+
+            // Shows a server error under the matching (visible) field, otherwise as a toast
+            function showApiError(err, fields, form) {
+                const input = fields[err.data.field];
+                if (input && input.offsetParent !== null) {
+                    setFieldError(input, err.message);
+                    shake(form);
+                } else {
+                    showToast(err.message, 'error', 4500);
+                }
+            }
+
+            // ---------- ROLE PICKER (ADMIN / FACULTY / STUDENT) ----------
+            // Only students can create an account; faculty accounts are made by the admin, and the admin account is built in
+            const ROLE_TEXT = {
+                admin: {
+                    idLabel: 'Username',
+                    placeholder: 'e.g. admin',
+                    subtitle: 'Sign in to manage accounts, records and portal settings.'
+                },
+                faculty: {
+                    idLabel: 'Employee ID or Gmail',
+                    placeholder: 'e.g. FAC-2026-014 or you@gmail.com',
+                    subtitle: 'Sign in to manage your classes, grades and announcements.'
+                },
+                student: {
+                    idLabel: 'Student ID or Gmail',
+                    placeholder: 'e.g. 2026-CS-0412 or you@gmail.com',
+                    subtitle: 'Sign in to your student portal to continue your classes.'
+                }
+            };
+            let currentRole = 'student';
+
+            function setRole(role) {
+                currentRole = role;
+                const text = ROLE_TEXT[role];
+
+                document.querySelectorAll('.role-option').forEach(btn => {
+                    const selected = btn.dataset.role === role;
+                    btn.classList.toggle('active', selected);
+                    btn.setAttribute('aria-checked', String(selected));
+                });
+                // Show only what applies to this role (e.g. "Create an account" for students)
+                document.querySelectorAll('[data-roles]').forEach(el => {
+                    el.hidden = !el.dataset.roles.split(' ').includes(role);
+                });
+
+                loginSubtitle.textContent = text.subtitle;
+                loginIdLabel.textContent = text.idLabel;
+                studentIdInput.placeholder = text.placeholder;
+                clearFieldErrors(loginForm);
+
+                try {
+                    localStorage.setItem('eduportal_role', role); // remember the last choice on this browser
+                } catch {}
+            }
+
+            document.querySelectorAll('.role-option').forEach(btn => {
+                btn.addEventListener('click', () => setRole(btn.dataset.role));
+            });
+
+            try {
+                const savedRole = localStorage.getItem('eduportal_role');
+                if (ROLE_TEXT[savedRole]) setRole(savedRole);
+            } catch {}
+
+            // ---------- SIGN IN ----------
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearFieldErrors(loginForm);
+
+                const identifier = studentIdInput.value.trim();
+                const password = passwordInput.value;
+                let isValid = true;
+
+                if (identifier.length < 3) {
+                    setFieldError(studentIdInput, `Please enter your ${ROLE_TEXT[currentRole].idLabel}.`);
+                    isValid = false;
+                }
+                if (!password) {
+                    setFieldError(passwordInput, 'Please enter your password.');
+                    isValid = false;
+                }
+                if (!isValid) return shake(loginForm);
+
+                setButtonLoading(signInBtn, true, 'Verifying credentials...');
+                try {
+                    const data = await api('login', { role: currentRole, identifier, password, remember: rememberMe.checked });
+                    if (data.signedIn) {
+                        // Students and the built-in admin are signed in right away (no code to verify)
+                        showToast(`Welcome back, ${data.firstName}! Redirecting...`, 'success', 2500);
+                        redirectToDashboard(700);
+                    } else {
+                        openOtpView('signin', data);
+                    }
+                } catch (err) {
+                    showApiError(err, { identifier: studentIdInput, password: passwordInput }, loginForm);
+                } finally {
+                    setButtonLoading(signInBtn, false);
+                }
+            });
+
+            // Forgot Password simulation
+            forgotPasswordBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const idVal = studentIdInput.value.trim();
+                if (!idVal) {
+                    studentIdInput.focus();
+                    setFieldError(studentIdInput, `Please enter your ${ROLE_TEXT[currentRole].idLabel} first to reset your password.`);
+                } else {
+                    showToast(`Password reset link dispatched to ${idVal}`, 'success', 4000);
+                }
+            });
+
+            showSignupLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                clearFieldErrors(loginForm);
+                showView('details');
+                firstNameInput.focus();
+            });
+
+            document.querySelectorAll('.show-login-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showView('signin');
+                    studentIdInput.focus();
+                });
+            });
+
+            // ---------- CREATE STUDENT ACCOUNT: STEP 1 - DETAILS ----------
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearFieldErrors(signupForm);
+
+                const details = {
+                    firstName: firstNameInput.value.trim(),
+                    lastName: lastNameInput.value.trim(),
+                    idNumber: signupIdInput.value.trim().toUpperCase(),
+                    program: programSelect.value,
+                    yearLevel: yearLevelSelect.value
+                };
+                const password = signupPasswordInput.value;
+                let isValid = true;
+
+                if (details.firstName.length < 2) {
+                    setFieldError(firstNameInput, 'Please enter your first name.');
+                    isValid = false;
+                }
+                if (details.lastName.length < 2) {
+                    setFieldError(lastNameInput, 'Please enter your last name.');
+                    isValid = false;
+                }
+                if (!ID_NUMBER_PATTERN.test(details.idNumber)) {
+                    setFieldError(signupIdInput, 'Use letters, numbers and dashes only, e.g. 2026-CS-0412.');
+                    isValid = false;
+                }
+                if (!details.program) {
+                    setFieldError(programSelect, 'Please select your program.');
+                    isValid = false;
+                }
+                if (!details.yearLevel) {
+                    setFieldError(yearLevelSelect, 'Select your year.');
+                    isValid = false;
+                }
+                if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+                    setFieldError(signupPasswordInput, 'Use at least 8 characters with a letter and a number.');
+                    isValid = false;
+                }
+                if (!confirmPasswordInput.value || confirmPasswordInput.value !== password) {
+                    setFieldError(confirmPasswordInput, 'Passwords do not match.');
+                    isValid = false;
+                }
+                if (!agreeTerms.checked) {
+                    setFieldError(agreeTerms, 'Please accept the Terms of Service and Privacy Policy.');
+                    isValid = false;
+                }
+                if (!isValid) return shake(signupForm);
+
+                setButtonLoading(signupSubmitBtn, true, 'Checking details...');
+                try {
+                    await api('register', { ...details, password });
+                    showLinkStep();
+                } catch (err) {
+                    showApiError(err, {
+                        firstName: firstNameInput,
+                        lastName: lastNameInput,
+                        idNumber: signupIdInput,
+                        program: programSelect,
+                        yearLevel: yearLevelSelect,
+                        password: signupPasswordInput
+                    }, signupForm);
+                } finally {
+                    setButtonLoading(signupSubmitBtn, false);
+                }
+            });
+
+            // ---------- CREATE ACCOUNT: STEP 2 - LINK GOOGLE ----------
+            function showLinkStep() {
+                linkedAccount.classList.remove('show');
+                googleLinkBtn.style.display = googleClientId ? '' : 'none';
+                gmailFallbackForm.style.display = googleClientId ? 'none' : '';
+                showView('google');
+                if (!googleClientId) fallbackGmailInput.focus();
+            }
+
+            async function linkAccount(payload, display) {
+                // Show which account is being linked while the server sends the code
+                linkedName.textContent = display.name || `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`;
+                linkedEmail.textContent = display.email;
+                linkedAvatar.textContent = (firstNameInput.value.trim()[0] + lastNameInput.value.trim()[0]).toUpperCase();
+                if (display.picture) {
+                    const img = document.createElement('img');
+                    img.src = display.picture;
+                    img.alt = '';
+                    img.referrerPolicy = 'no-referrer';
+                    linkedAvatar.replaceChildren(img);
+                }
+                linkedAccount.classList.add('show');
+                googleLinkBtn.style.display = 'none';
+                gmailFallbackForm.style.display = 'none';
+
+                try {
+                    openOtpView('signup', await api('link', payload));
+                } catch (err) {
+                    if (err.data.restart) {
+                        showView('details');
+                        showToast(err.message, 'error', 4500);
+                        return;
+                    }
+                    showLinkStep();
+                    showApiError(err, { email: fallbackGmailInput }, gmailFallbackForm);
+                }
+            }
+
+            gmailFallbackForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearFieldErrors(gmailFallbackForm);
+
+                const email = fallbackGmailInput.value.trim().toLowerCase();
+                if (!GMAIL_PATTERN.test(email)) {
+                    setFieldError(fallbackGmailInput, 'Enter a valid Gmail address (example@gmail.com).');
+                    return shake(gmailFallbackForm);
+                }
+                await linkAccount({ email }, { email });
+            });
+
+            backToDetailsBtn.addEventListener('click', () => {
+                showView('details');
+            });
+
+            // ---------- GOOGLE IDENTITY SERVICES ----------
+            // Only used to show the chosen account; the server re-checks the token with Google
+            function decodeJwt(token) {
+                const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                const json = decodeURIComponent(Array.from(atob(base64), c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
+                return JSON.parse(json);
+            }
+
+            function handleGoogleCredential(response) {
+                if (currentView === 'google') {
+                    let profile = {};
+                    try {
+                        profile = decodeJwt(response.credential);
+                    } catch {}
+                    linkAccount({ credential: response.credential }, {
+                        name: profile.name,
+                        email: profile.email || '',
+                        picture: profile.picture
+                    });
+                } else if (currentView === 'signin') {
+                    signInWithGoogle(response.credential);
+                }
+            }
+
+            async function signInWithGoogle(credential) {
+                try {
+                    const data = await api('google', { role: currentRole, credential, remember: rememberMe.checked });
+                    showToast(`Welcome back, ${data.firstName}! Redirecting...`, 'success', 2500);
+                    redirectToDashboard(900);
+                } catch (err) {
+                    showToast(err.message, 'error', 5000);
+                }
+            }
+
+            function renderGoogleButton(slot) {
+                slot.innerHTML = '';
+                google.accounts.id.renderButton(slot, {
+                    theme: 'outline',
+                    size: 'large',
+                    shape: 'pill',
+                    text: 'continue_with',
+                    logo_alignment: 'center',
+                    width: Math.min(400, slot.offsetWidth || 320)
+                });
+            }
+
+            function renderGoogleButtons() {
+                if (!googleReady) return;
+                if (currentView === 'signin') renderGoogleButton(googleSignInBtn);
+                if (currentView === 'google' && !linkedAccount.classList.contains('show')) renderGoogleButton(googleLinkBtn);
+            }
+
+            function loadGoogle() {
+                googleSignInWrap.style.display = '';
+                window.onGoogleLibraryLoad = () => {
+                    google.accounts.id.initialize({
+                        client_id: googleClientId,
+                        callback: handleGoogleCredential,
+                        cancel_on_tap_outside: true
+                    });
+                    googleReady = true;
+                    renderGoogleButtons();
+                };
+
+                const gsiScript = document.createElement('script');
+                gsiScript.src = 'https://accounts.google.com/gsi/client';
+                gsiScript.async = true;
+                gsiScript.onerror = () => {
+                    googleSignInWrap.style.display = 'none';
+                    showToast('Could not load Google sign-in. Check your internet connection and reload the page.', 'error', 6000);
+                };
+                document.head.appendChild(gsiScript);
+            }
+
+            // ---------- OTP ----------
+            function openOtpView(purpose, data) {
+                otpPurpose = purpose;
+                const isSignup = purpose === 'signup';
+                otpTitle.textContent = isSignup ? 'Verify your Gmail' : 'Two-Factor Verification';
+                backFromOtpText.textContent = isSignup ? 'Use a different Google account' : 'Back to Sign In';
+                maskedTargetEmail.textContent = data.maskedEmail;
+                resetOtpUi();
+                showCodeSent(data);
+                showView('otp');
+                otpBoxes[0].focus();
+                startResendCountdown(data.resendSeconds);
+            }
+
+            function showCodeSent(data) {
+                // demoCode only comes back when no Gmail SMTP login is set in api/config.php
+                otpDemoNotice.style.display = data.demoCode ? 'flex' : 'none';
+                otpDemoCode.textContent = data.demoCode || '';
+                showToast(data.demoCode
+                    ? 'Demo mode: your verification code is shown on screen.'
+                    : `Verification code sent to ${data.maskedEmail}`, 'info');
+            }
+
+            function clearOtpBoxes() {
+                otpBoxes.forEach(box => {
+                    box.value = '';
+                    box.classList.remove('filled');
+                });
+            }
+
+            function resetOtpUi() {
+                clearOtpBoxes();
+                otpError.classList.remove('show');
+                verifyOtpBtn.disabled = false;
+                verifyOtpBtn.style.background = '';
+                verifyBtnText.textContent = 'Verify & Proceed';
+                verifyBtnIcon.className = 'fa-solid fa-circle-check';
+                isVerifying = false;
+            }
+
+            function showOtpError(message) {
+                otpErrorText.textContent = message;
+                otpError.classList.add('show');
+                shake(otpContainer);
+            }
+
+            // OTP Box Keyboard Navigation and Behavior
+            otpBoxes.forEach((box, index) => {
+                // Input handling
+                box.addEventListener('input', (e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    e.target.value = val;
+
+                    if (val) {
+                        box.classList.add('filled');
+                        if (index < otpBoxes.length - 1) {
+                            otpBoxes[index + 1].focus();
+                        }
+                    } else {
+                        box.classList.remove('filled');
+                    }
+
+                    // Auto submit if all 6 boxes are filled
+                    checkAndAutoSubmitOtp();
+                });
+
+                // Keydown navigation (Backspace & Arrow keys)
+                box.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !box.value && index > 0) {
+                        otpBoxes[index - 1].focus();
+                    } else if (e.key === 'ArrowLeft' && index > 0) {
+                        otpBoxes[index - 1].focus();
+                    } else if (e.key === 'ArrowRight' && index < otpBoxes.length - 1) {
+                        otpBoxes[index + 1].focus();
+                    } else if (e.key === 'Enter') {
+                        handleVerifyOtp();
+                    }
+                });
+
+                // Paste handling for full 6 digits
+                box.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim();
+                    const numericOnly = pastedData.replace(/[^0-9]/g, '').slice(0, 6);
+
+                    if (numericOnly) {
+                        numericOnly.split('').forEach((char, charIdx) => {
+                            if (otpBoxes[charIdx]) {
+                                otpBoxes[charIdx].value = char;
+                                otpBoxes[charIdx].classList.add('filled');
+                            }
+                        });
+
+                        const nextIndex = Math.min(numericOnly.length, otpBoxes.length - 1);
+                        otpBoxes[nextIndex].focus();
+                        checkAndAutoSubmitOtp();
+                    }
+                });
+            });
+
+            function getEnteredOtp() {
+                let code = '';
+                otpBoxes.forEach(box => {
+                    code += box.value;
+                });
+                return code;
+            }
+
+            function checkAndAutoSubmitOtp() {
+                if (getEnteredOtp().length === 6) {
+                    handleVerifyOtp();
+                }
+            }
+
+            async function handleVerifyOtp() {
+                if (isVerifying) return;
+                const code = getEnteredOtp();
+                if (code.length < 6) {
+                    showOtpError('Please enter all 6 digits of your verification code.');
+                    return;
+                }
+
+                isVerifying = true;
+                otpError.classList.remove('show');
+                verifyOtpBtn.disabled = true;
+                verifyBtnText.textContent = 'Verifying...';
+                verifyBtnIcon.className = 'fa-solid fa-circle-notch fa-spin';
+
+                try {
+                    const data = await api('verify', { code, remember: rememberMe.checked });
+                    clearInterval(countdownTimer);
+                    verifyBtnText.textContent = 'Success! Redirecting...';
+                    verifyBtnIcon.className = 'fa-solid fa-circle-check';
+                    verifyOtpBtn.style.background = 'var(--success)';
+                    showToast(data.isNewAccount
+                        ? `Account created! Welcome to EduPortal, ${data.firstName}.`
+                        : `Verification successful! Welcome back, ${data.firstName}.`, 'success', 2500);
+                    redirectToDashboard(1100);
+                } catch (err) {
+                    resetOtpUi();
+                    if (err.data.restart) {
+                        clearInterval(countdownTimer);
+                        showView(otpPurpose === 'signup' ? 'details' : 'signin');
+                        showToast(err.message, 'error', 4500);
+                        return;
+                    }
+                    if (err.data.expired) enableResend();
+                    otpBoxes[0].focus();
+                    showOtpError(err.message);
+                }
+            }
+
+            verifyOtpBtn.addEventListener('click', handleVerifyOtp);
+
+            // Resend Countdown Timer
+            function formatCountdown(seconds) {
+                return `(${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')})`;
+            }
+
+            function enableResend() {
+                clearInterval(countdownTimer);
+                timerCountdown.textContent = '';
+                resendCodeLink.classList.remove('disabled');
+            }
+
+            function startResendCountdown(seconds) {
+                clearInterval(countdownTimer);
+                let secondsRemaining = seconds;
+                resendCodeLink.classList.add('disabled');
+                timerCountdown.textContent = formatCountdown(secondsRemaining);
+
+                countdownTimer = setInterval(() => {
+                    secondsRemaining--;
+                    if (secondsRemaining > 0) {
+                        timerCountdown.textContent = formatCountdown(secondsRemaining);
+                    } else {
+                        enableResend();
+                    }
+                }, 1000);
+            }
+
+            resendCodeLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                if (resendCodeLink.classList.contains('disabled') || isVerifying) return;
+
+                resendCodeLink.classList.add('disabled');
+                try {
+                    const data = await api('resend');
+                    resetOtpUi();
+                    showCodeSent(data);
+                    otpBoxes[0].focus();
+                    startResendCountdown(data.resendSeconds);
+                } catch (err) {
+                    resendCodeLink.classList.remove('disabled');
+                    showToast(err.message, 'error', 4500);
+                }
+            });
+
+            // Back from OTP: sign-up returns to Google linking, sign-in returns to the form
+            backFromOtpBtn.addEventListener('click', () => {
+                clearInterval(countdownTimer);
+                resetOtpUi();
+
+                if (otpPurpose === 'signup') {
+                    otpPurpose = null;
+                    showLinkStep();
+                } else {
+                    otpPurpose = null;
+                    passwordInput.value = '';
+                    showView('signin');
+                    passwordInput.focus();
+                }
+            });
+
+            // ---------- START ----------
+            if (location.protocol === 'file:') {
+                showToast('Open this site through XAMPP at http://localhost/eduportal/ - it needs PHP to work.', 'error', 600000);
+                return;
+            }
+
+            api('init')
+                .then(settings => {
+                    if (settings.signedIn) {
+                        window.location.replace('index.php');
+                        return;
+                    }
+                    googleClientId = settings.googleClientId;
+                    if (googleClientId) loadGoogle();
+                })
+                .catch(err => showToast(err.message, 'error', 10000));
+        });
+    </script>
+</body>
+</html>

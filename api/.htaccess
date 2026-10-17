@@ -1,0 +1,4 @@
+# Only auth.php and admin.php are endpoints; the rest are included by PHP, never opened directly.
+<FilesMatch "^(config|config\.example|bootstrap|mailer)\.php$">
+    Require all denied
+</FilesMatch>

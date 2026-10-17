@@ -46,14 +46,14 @@ app_page_start($user, 'faculty.php', 'Faculty Dashboard', ['id' => 'page-search'
 
 <?php
 app_stats([
-    ['fa-chalkboard', 'primary', count($myClasses), 'Classes assigned to you'],
+    ['fa-chalkboard', 'primary', count($myClasses), 'Classes you teach'],
     ['fa-user-graduate', 'success', count($roster), 'Students in your department'],
     ['fa-school', 'warning', $allStudents, 'Registered students (all programs)'],
 ]);
 ?>
             <section class="card section-gap" id="classes">
-                <?php app_card_header('fa-chalkboard-user', 'My Classes', 'Courses the admin assigned to you'); ?>
-                <?php course_table($user, $myClasses, false, 'No classes assigned yet', 'Courses the admin assigns to you will appear here.'); ?>
+                <?php app_card_header('fa-chalkboard-user', 'My Classes', 'Pick more on the Courses page'); ?>
+                <?php course_table($user, $myClasses, false, 'No classes yet', 'Pick the classes you teach on the Courses page.'); ?>
             </section>
 
             <section class="card section-gap" id="roster">

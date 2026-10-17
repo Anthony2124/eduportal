@@ -16,7 +16,7 @@ app_page_header('Enrollment', 'Add or remove students in a course. Enrolled stud
 
 if (!$course) {
     if ($user['role'] === 'faculty') {
-        app_empty_card('fa-book', 'Your Courses', 'fa-book', 'No courses assigned to you yet', 'Ask the admin to assign you a course.');
+        app_empty_card('fa-book', 'Your Courses', 'fa-book', 'No classes yet', 'Pick the classes you teach on the Courses page.');
     } else {
         app_empty_card('fa-book', 'Courses', 'fa-book', 'No courses yet', 'Add courses on the Courses page first.');
     }
@@ -25,8 +25,8 @@ if (!$course) {
             <section class="card section-gap">
                 <div class="card-header card-header-wrap">
                     <div>
-                        <div class="card-title"><i class="fa-solid fa-users" style="color: var(--primary);"></i> Students in <?= e($course['code']) ?></div>
-                        <div class="card-subtitle"><?= e($course['title']) ?> • <?= count($roster) ?> enrolled<?= $course['schedule'] ? ' • ' . e($course['schedule']) : '' ?></div>
+                        <div class="card-title"><i class="fa-solid fa-users" style="color: var(--primary);"></i> Students in <?= e(class_name($course)) ?></div>
+                        <div class="card-subtitle"><?= e($course['title']) ?> • <?= count($roster) ?> enrolled<?= class_schedule($course) !== '' ? ' • ' . e(class_schedule($course)) : '' ?></div>
                     </div>
                     <div class="card-tools">
                         <?php course_picker($courses, $course); ?>
@@ -59,7 +59,7 @@ if (!$course) {
                                 <td style="text-align: right;">
                                     <button type="button" class="btn btn-outline btn-sm content-remove" data-unenroll
                                             data-course="<?= (int) $course['id'] ?>" data-student="<?= (int) $student['id'] ?>"
-                                            data-name="<?= e($student['first_name'] . ' ' . $student['last_name']) ?>" data-course-name="<?= e($course['code']) ?>">
+                                            data-name="<?= e($student['first_name'] . ' ' . $student['last_name']) ?>" data-course-name="<?= e(class_name($course)) ?>">
                                         <i class="fa-solid fa-user-minus"></i> Remove
                                     </button>
                                 </td>
@@ -73,7 +73,7 @@ if (!$course) {
             <div class="modal-overlay" id="enroll-modal">
                 <div class="modal" role="dialog" aria-modal="true" aria-labelledby="enroll-modal-title" style="max-width: 480px;">
                     <div class="modal-header">
-                        <h3 class="modal-title" id="enroll-modal-title">Enroll a student in <?= e($course['code']) ?></h3>
+                        <h3 class="modal-title" id="enroll-modal-title">Enroll a student in <?= e(class_name($course)) ?></h3>
                         <button type="button" class="modal-close-btn" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <form novalidate>

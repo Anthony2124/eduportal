@@ -1,6 +1,6 @@
 /**
- * Add / Edit / Remove buttons for announcements, events, scholarships and courses (includes/content.php).
- * Changes are saved through api/content.php, then the page reloads to show them.
+ * Add / Edit / Remove buttons (includes/content.php), enrollment, grades, and faculty picking classes.
+ * Changes are saved through api/content.php and api/academics.php, then the page reloads to show them.
  * Uses SITE_ROOT, showToast and confirmAction from js/main.js.
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (unenroll) unenrollStudent(unenroll.dataset);
     if (gradeEdit) openGradeForm(gradeEdit.dataset);
     if (gradeClear) clearGrade(gradeClear.dataset);
+
+    // Faculty picking classes (Courses page)
+    const teach = e.target.closest('[data-class-teach]');
+    const drop = e.target.closest('[data-class-drop]');
+    if (teach) teachClass(teach.dataset);
+    if (drop) dropClass(drop.dataset);
   });
 
   document.querySelectorAll('[data-content-modal]').forEach(modal => {
@@ -29,7 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       saveContent(modal.dataset.contentModal, form);
     });
-    form.addEventListener('input', (e) => e.target.classList.remove('is-invalid'));
+    form.addEventListener('input', (e) => {
+      e.target.classList.remove('is-invalid');
+      e.target.closest('.day-picker')?.classList.remove('is-invalid');
+    });
   });
 
   const enrollForm = document.querySelector('#enroll-modal form');
@@ -76,7 +85,15 @@ function openContentForm(type, item) {
   form.elements.id.value = item ? item.id : '';
   if (item) {
     for (const [name, value] of Object.entries(item)) {
-      if (name !== 'id' && form.elements[name]) form.elements[name].value = value ?? '';
+      if (name === 'id' || !form.elements[name]) continue;
+      const boxes = form.querySelectorAll(`input[type=checkbox][name="${name}"]`);
+      if (boxes.length) {
+        // checkbox group (class days): "Mon,Wed,Fri"
+        const chosen = String(value ?? '').split(',');
+        boxes.forEach(box => { box.checked = chosen.includes(box.value); });
+      } else {
+        form.elements[name].value = value ?? '';
+      }
     }
   }
   title.textContent = item ? title.dataset.editTitle : title.dataset.addTitle;
@@ -89,7 +106,13 @@ function openContentForm(type, item) {
 async function saveContent(type, form) {
   const submit = form.querySelector('[type=submit]');
   const errorBox = form.querySelector('.form-error');
-  const payload = Object.fromEntries(new FormData(form));
+  const data = new FormData(form);
+  const payload = Object.fromEntries(data);
+  // checkbox groups (class days) send every ticked value
+  form.querySelectorAll('.day-picker').forEach(group => {
+    const name = group.querySelector('input').name;
+    payload[name] = data.getAll(name);
+  });
   errorBox.hidden = true;
   submit.disabled = true;
 
@@ -100,9 +123,10 @@ async function saveContent(type, form) {
   } catch (err) {
     errorBox.textContent = err.message;
     errorBox.hidden = false;
-    const field = err.field && form.elements[err.field];
+    let field = err.field && form.elements[err.field];
+    if (field instanceof RadioNodeList) field = field[0]; // checkbox group: highlight the group, focus its first box
     if (field) {
-      field.classList.add('is-invalid');
+      (field.closest('.day-picker') || field).classList.add('is-invalid');
       field.focus();
     }
     submit.disabled = false;
@@ -156,7 +180,7 @@ function openModalForm(id, values) {
 
 function openGradeForm(data) {
   const modal = openModalForm('grade-modal', {
-    course_id: data.course, student_id: data.student, midterm: data.midterm, final: data.final
+    course_id: data.course, student_id: data.student, prelim: data.prelim, midterm: data.midterm, final: data.final
   });
   if (modal) modal.querySelector('.modal-title').textContent = `Grades for ${data.name}`;
 }
@@ -189,6 +213,32 @@ async function unenrollStudent(data) {
   try {
     await academicsApi('unenroll', { course_id: data.course, student_id: data.student });
     showToast('Student removed from the course.', 'success');
+    setTimeout(() => window.location.reload(), 600);
+  } catch (err) {
+    showToast(err.message, 'danger');
+  }
+}
+
+async function teachClass(data) {
+  const confirmed = await confirmAction(`Teach ${data.name}?`,
+    `You become its instructor: ${data.details}. You can drop it later.`, 'Teach this class', 'fa-chalkboard-user');
+  if (!confirmed) return;
+  try {
+    await academicsApi('teach', { course_id: data.classTeach });
+    showToast(`You now teach ${data.name}.`, 'success');
+    setTimeout(() => window.location.reload(), 600);
+  } catch (err) {
+    showToast(err.message, 'danger');
+  }
+}
+
+async function dropClass(data) {
+  const confirmed = await confirmAction(`Stop teaching ${data.name}?`,
+    'It goes back to the open classes for another instructor. Its students, assignments and grades stay.', 'Drop class', 'fa-right-from-bracket');
+  if (!confirmed) return;
+  try {
+    await academicsApi('drop_class', { course_id: data.classDrop });
+    showToast('Class dropped.', 'success');
     setTimeout(() => window.location.reload(), 600);
   } catch (err) {
     showToast(err.message, 'danger');

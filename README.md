@@ -6,16 +6,20 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 - **Faculty** accounts are created by the Admin. Faculty sign in with their Employee ID or Gmail, password, and a code sent to their Gmail.
 - **Admin** is a built-in account. It manages accounts and can open every page.
 - Every page shares one sidebar and top bar, and each role only sees (and can only open) its own pages.
-- **Add / Edit / Remove:** the Admin manages Courses (and assigns faculty), Events and Scholarships;
+- **Add / Edit / Remove:** the Admin manages Courses, Events and Scholarships;
   the Admin and Faculty post Announcements (Faculty can change only their own). Everything is saved in MySQL.
+- **Courses** are classes: a course offered to a **block** (e.g. BSIT 2-A) with its days, time and room. The same
+  course can be offered to several blocks. The Admin can assign the instructor, or leave it open: Faculty then pick
+  open classes on the Courses page (**Teach this class**) and take on that block and schedule. A class can't be
+  picked if it clashes with one the instructor already teaches, and a block can't have two classes at once.
 - **Classes:** on **Enrollment** the Admin or the course's Faculty adds students to a course. Faculty then post
   **Assignments** and **Exams** and enter **Grades** for their own courses (the Admin doesn't have these pages).
   Students see only the courses they're enrolled in: their schedule, assignments, exams, grades and GPA.
 - **Class group chats** (Messages): every course has one. Students are added automatically when they're enrolled
   (and removed when they leave the course), together with the course's Faculty; the Admin can open every chat.
   New messages show up within a few seconds, with unread counts in the chat list.
-- **Grades** use the 1.00–5.00 scale: 1.00 is the highest, 3.00 the lowest passing grade, 5.00 failed.
-  The final rating is the average of the midterm and final grades, and the GPA is weighted by units.
+- **Grades** (prelim, midterm and final) use the 1.00–5.00 scale: 1.00 is the highest, 3.00 the lowest passing
+  grade, 5.00 failed. The final rating is the average of the three, and the GPA is weighted by units.
 
 ## Run it on your computer
 
@@ -35,9 +39,10 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 ## Getting updates
 
 1. In the `eduportal` folder, run `git pull`.
-2. Then import `database/upgrade.sql` in phpMyAdmin (**Import**). It adds any new tables and keeps your existing
-   accounts and data, and it is safe to import more than once. Skipping it makes pages like Courses or Grades show
-   a database error after an update that added tables (the Enrollment/Grades and the group chat updates did).
+2. Then import `database/upgrade.sql` in phpMyAdmin (**Import**). It adds any new tables and columns and keeps your
+   existing accounts and data, and it is safe to import more than once. Skipping it makes pages like Courses or
+   Grades show a database error after an update that changed the database (the Enrollment/Grades, group chat and
+   blocks/prelim updates did).
 
 ## Where things are
 

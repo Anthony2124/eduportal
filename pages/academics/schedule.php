@@ -8,7 +8,7 @@ $user = require_page_access($page);
 
 [$classes, $subtitle, $emptyText] = match ($user['role']) {
     'student' => [student_courses((int) $user['id']), 'Your classes this semester', 'Your classes appear here once you are enrolled in courses.'],
-    'faculty' => [content_items('courses', 'a.faculty_id = ?', [$user['id']]), 'The classes you teach', 'Courses the admin assigns to you will appear here.'],
+    'faculty' => [content_items('courses', 'a.faculty_id = ?', [$user['id']]), 'The classes you teach', 'Pick the classes you teach on the Courses page.'],
     default => [content_items('courses'), 'Every class this semester', 'Add courses on the Courses page.'],
 };
 

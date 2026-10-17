@@ -102,7 +102,6 @@ const PAGE_SECTIONS = [
     'Communication' => [
         'pages/communication/messaging.php' => ['fa-envelope', 'Messages'],
         'pages/communication/announcements.php' => ['fa-bullhorn', 'Announcements'],
-        'pages/communication/office-hours.php' => ['fa-video', 'Office Hours'],
     ],
     'Student Life' => [
         'pages/student-life/events.php' => ['fa-calendar', 'Events'],
@@ -127,7 +126,6 @@ const ROLE_PAGES = [
         'pages/admin/scholarships.php',
         'pages/communication/messaging.php',
         'pages/communication/announcements.php',
-        'pages/communication/office-hours.php',
         'pages/student-life/events.php',
         'pages/student-life/clubs.php',
         'pages/smart/analytics.php',
@@ -142,7 +140,6 @@ const ROLE_PAGES = [
         'pages/admin/enrollment.php',
         'pages/communication/messaging.php',
         'pages/communication/announcements.php',
-        'pages/communication/office-hours.php',
         'pages/student-life/events.php',
         'pages/settings/profile.php',
     ],
@@ -156,7 +153,6 @@ const ROLE_PAGES = [
         'pages/admin/scholarships.php',
         'pages/communication/messaging.php',
         'pages/communication/announcements.php',
-        'pages/communication/office-hours.php',
         'pages/student-life/events.php',
         'pages/student-life/clubs.php',
         'pages/settings/profile.php',

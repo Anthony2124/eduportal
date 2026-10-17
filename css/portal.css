@@ -1072,3 +1072,67 @@ html {
     display: none;
   }
 }
+
+/* ---------- Classes: day checkboxes (course form), clash note (faculty picking classes) ---------- */
+.day-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.day-picker label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.day-picker input {
+  accent-color: var(--primary);
+}
+
+.day-picker label:has(input:checked) {
+  background: #EEF2FF;
+  border-color: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.day-picker.is-invalid label {
+  border-color: var(--danger);
+}
+
+.clash-note {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 190px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #B45309;
+  text-align: left;
+}
+
+.clash-note i {
+  margin-top: 2px;
+}
+
+/* Grade form: prelim, midterm, final side by side */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+@media (max-width: 600px) {
+  .form-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

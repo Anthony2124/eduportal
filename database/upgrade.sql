@@ -135,7 +135,8 @@ CREATE TABLE IF NOT EXISTS grades (
     id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     course_id   INT UNSIGNED  NOT NULL,
     student_id  INT UNSIGNED  NOT NULL,
-    midterm     DECIMAL(3,2)  NULL,                     -- 1.00 (highest) to 5.00 (failed)
+    prelim      DECIMAL(3,2)  NULL,                     -- 1.00 (highest) to 5.00 (failed)
+    midterm     DECIMAL(3,2)  NULL,
     final       DECIMAL(3,2)  NULL,
     graded_by   INT UNSIGNED  NULL,
     updated_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -145,6 +146,20 @@ CREATE TABLE IF NOT EXISTS grades (
     CONSTRAINT fk_grades_student FOREIGN KEY (student_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_grades_by FOREIGN KEY (graded_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+-- Prelim grade, next to midterm and final
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS prelim DECIMAL(3,2) NULL AFTER student_id;
+
+-- Classes get a block (section) and meeting days and times, so faculty can pick open classes without clashes.
+-- The same course can be offered to several blocks. The old free-text "schedule" column is kept and shown
+-- for classes created before this update, until they're given days and times.
+ALTER TABLE courses
+    ADD COLUMN IF NOT EXISTS block VARCHAR(30) NULL AFTER units,
+    ADD COLUMN IF NOT EXISTS days VARCHAR(30) NULL AFTER block,
+    ADD COLUMN IF NOT EXISTS start_time TIME NULL AFTER days,
+    ADD COLUMN IF NOT EXISTS end_time TIME NULL AFTER start_time,
+    DROP INDEX IF EXISTS uq_courses_code,
+    ADD UNIQUE INDEX IF NOT EXISTS uq_courses_code_block (code, block);
 
 -- Class group chats: every course has one. Its members are the course's faculty and enrolled students
 -- (worked out from enrollments, so enrolling a student adds them automatically).

@@ -1,6 +1,6 @@
 <?php
 /*
- * Add / Edit / Remove for announcements, events, scholarships and courses (called by js/content.js).
+ * Add / Edit / Remove for announcements, events, scholarships, courses, assignments and exams (called by js/content.js).
  * Which fields each type has and who may change it is set in CONTENT_TYPES (includes/content.php).
  *
  *   POST api/content.php?action=save&type=events     { id?, ...fields }   add (no id) or edit (with id)
@@ -49,13 +49,23 @@ function save_content(array $user, string $type, array $input): never
     $values = validate_content($user, $type, $input);
     $id = (int) ($input['id'] ?? 0);
 
-    // Fields that must be different for every item (e.g. course code)
+    // Fields that must be different for every item ('unique'), or for every item with the same value of
+    // another field ('unique_with', e.g. a course code within a block)
     foreach ($def['fields'] as $name => $field) {
-        if (!empty($field['unique']) && $values[$name] !== null) {
-            $stmt = db()->prepare("SELECT 1 FROM {$def['table']} WHERE {$name} = ? AND id <> ?");
-            $stmt->execute([$values[$name], $id]);
+        $with = $field['unique_with'] ?? null;
+        if ((!empty($field['unique']) || $with) && $values[$name] !== null) {
+            $sql = "SELECT 1 FROM {$def['table']} WHERE {$name} = ? AND id <> ?";
+            $params = [$values[$name], $id];
+            if ($with) {
+                $sql .= " AND {$with} <=> ?";
+                $params[] = $values[$with];
+            }
+            $stmt = db()->prepare($sql);
+            $stmt->execute($params);
             if ($stmt->fetchColumn()) {
-                fail("Another {$def['label']} already uses this " . strtolower($field['label']) . '.', 409, ['field' => $name]);
+                fail($with && $values[$with] !== null
+                    ? "{$values[$with]} already has a {$def['label']} with this " . strtolower($field['label']) . '.'
+                    : "Another {$def['label']} already uses this " . strtolower($field['label']) . '.', 409, ['field' => $name]);
             }
         }
     }

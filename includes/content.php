@@ -1,12 +1,15 @@
 <?php
 /*
  * Content managed from the portal with Add / Edit / Remove buttons:
- * announcements, events, scholarships and courses.
+ * announcements, events, scholarships, courses, assignments and exams.
  *
  * Each type is described once in CONTENT_TYPES (fields + who can manage it). The same code then builds
  * the form, checks the input (api/content.php) and shows the lists on the pages.
  */
 require_once __DIR__ . '/../api/bootstrap.php';
+
+// Days a class can meet on: stored as e.g. "Mon,Wed,Fri", shown as "MWF"
+const CLASS_DAYS = ['Mon' => 'M', 'Tue' => 'T', 'Wed' => 'W', 'Thu' => 'Th', 'Fri' => 'F', 'Sat' => 'S'];
 
 const CONTENT_TYPES = [
     'announcements' => [
@@ -52,6 +55,8 @@ const CONTENT_TYPES = [
             'requirements' => ['label' => 'Requirements', 'type' => 'textarea', 'max' => 3000],
         ],
     ],
+    // A course offered to a block, with its days, time and room. Leave Faculty empty to let faculty pick it
+    // ("Teach this class" on the Courses page). The same course code can be offered to several blocks.
     'courses' => [
         'table' => 'courses',
         'label' => 'course',
@@ -59,12 +64,15 @@ const CONTENT_TYPES = [
         'manage' => ['admin'],
         'own_only' => [],
         'remove_note' => 'Its enrollments, assignments, exams and grades are removed too.',
-        'order' => 'a.code ASC',
+        'order' => 'a.code ASC, a.block ASC',
         'fields' => [
-            'code' => ['label' => 'Course code', 'type' => 'text', 'required' => true, 'max' => 20, 'upper' => true, 'unique' => true, 'placeholder' => 'e.g. CS 201'],
+            'code' => ['label' => 'Course code', 'type' => 'text', 'required' => true, 'max' => 20, 'upper' => true, 'unique_with' => 'block', 'placeholder' => 'e.g. CS 201'],
             'title' => ['label' => 'Course title', 'type' => 'text', 'required' => true, 'max' => 150],
             'units' => ['label' => 'Units', 'type' => 'number', 'required' => true, 'min' => 1, 'max' => 10],
-            'schedule' => ['label' => 'Schedule', 'type' => 'text', 'max' => 100, 'placeholder' => 'e.g. MWF 8:00 - 9:00 AM'],
+            'block' => ['label' => 'Block', 'type' => 'text', 'max' => 30, 'upper' => true, 'placeholder' => 'e.g. BSIT 2-A'],
+            'days' => ['label' => 'Days', 'type' => 'days'],
+            'start_time' => ['label' => 'Class starts', 'type' => 'time'],
+            'end_time' => ['label' => 'Class ends', 'type' => 'time'],
             'room' => ['label' => 'Room', 'type' => 'text', 'max' => 60],
             'faculty_id' => ['label' => 'Faculty', 'type' => 'faculty'],
         ],
@@ -189,7 +197,7 @@ function content_items(string $type, string $where = '', array $params = [], int
         $from = "courses a LEFT JOIN users u ON u.id = a.faculty_id";
     } elseif (!empty($def['course_scoped'])) {
         // course code/title (alias c, also used by course_scope())
-        $select = 'a.*, c.code AS course_code, c.title AS course_title, c.faculty_id AS course_faculty_id';
+        $select = 'a.*, c.code AS course_code, c.block AS course_block, c.title AS course_title, c.faculty_id AS course_faculty_id';
         $from = "{$def['table']} a JOIN courses c ON c.id = a.course_id";
     } else {
         $select = "a.*, CONCAT(u.first_name, ' ', u.last_name) AS person_name";
@@ -221,6 +229,9 @@ function validate_content(array $user, string $type, array $input): array
     $values = [];
     foreach (CONTENT_TYPES[$type]['fields'] as $name => $field) {
         $raw = $input[$name] ?? '';
+        if ($field['type'] === 'days' && is_array($raw)) {
+            $raw = implode(',', array_filter($raw, 'is_string')); // checkboxes arrive as ["Mon", "Wed"]
+        }
         $value = is_string($raw) ? trim($raw) : (is_int($raw) ? (string) $raw : '');
         $label = $field['label'];
 
@@ -271,6 +282,13 @@ function validate_content(array $user, string $type, array $input): array
                     fail("Choose a {$label} from the list.", 422, ['field' => $name]);
                 }
                 break;
+            case 'days':
+                $picked = array_map('trim', explode(',', $value));
+                if (array_diff($picked, array_keys(CLASS_DAYS))) {
+                    fail("Choose the {$label} from the list.", 422, ['field' => $name]);
+                }
+                $value = implode(',', array_intersect(array_keys(CLASS_DAYS), $picked)); // in week order
+                break;
             default: // text, textarea
                 if (!empty($field['upper'])) {
                     $value = mb_strtoupper($value);
@@ -285,7 +303,74 @@ function validate_content(array $user, string $type, array $input): array
     if (in_array($type, ['events', 'exams'], true) && $values['start_time'] && $values['end_time'] && $values['end_time'] <= $values['start_time']) {
         fail('It must end after it starts.', 422, ['field' => 'end_time']);
     }
+    if ($type === 'courses') {
+        check_class_schedule($values, (int) ($input['id'] ?? 0));
+    }
     return $values;
+}
+
+/**
+ * A class's days, start and end time go together (or are all left empty), it must end after it starts,
+ * and it can't overlap another class of the same instructor or the same block.
+ */
+function check_class_schedule(array $class, int $courseId): void
+{
+    $given = array_filter([$class['days'], $class['start_time'], $class['end_time']], fn($part) => $part !== null);
+    if (!$given) {
+        return;
+    }
+    if (count($given) < 3) {
+        $missing = $class['days'] === null ? 'days' : ($class['start_time'] === null ? 'start_time' : 'end_time');
+        fail('Pick the class days and its start and end time (or leave all three empty).', 422, ['field' => $missing]);
+    }
+    if ($class['end_time'] <= $class['start_time']) {
+        fail('The class must end after it starts.', 422, ['field' => 'end_time']);
+    }
+    if ($clash = schedule_clash('faculty_id', $class['faculty_id'], $class, $courseId)) {
+        fail('This instructor already teaches ' . class_name($clash) . ' at that time (' . class_schedule($clash) . ').', 422, ['field' => 'faculty_id']);
+    }
+    if ($clash = schedule_clash('block', $class['block'], $class, $courseId)) {
+        fail("{$class['block']} already has " . class_name($clash) . ' at that time (' . class_schedule($clash) . ').', 422, ['field' => 'start_time']);
+    }
+}
+
+/**
+ * Another class, among those with $column = $value (the same instructor or the same block), that meets on
+ * one of the same days at an overlapping time - or null.
+ */
+function schedule_clash(string $column, mixed $value, array $class, int $exceptId = 0): ?array
+{
+    if ($value === null || empty($class['days']) || empty($class['start_time']) || empty($class['end_time'])) {
+        return null;
+    }
+    $stmt = db()->prepare("SELECT * FROM courses WHERE {$column} = ? AND id <> ? AND days IS NOT NULL AND start_time < ? AND end_time > ?");
+    $stmt->execute([$value, $exceptId, $class['end_time'], $class['start_time']]);
+    foreach ($stmt->fetchAll() as $other) {
+        if (array_intersect(explode(',', $other['days']), explode(',', $class['days']))) {
+            return $other;
+        }
+    }
+    return null;
+}
+
+/** "IT 101 (BSIT 2-A)": the course code and block, which tell classes of the same course apart. */
+function class_name(array $course, string $prefix = ''): string
+{
+    $block = $course[$prefix . 'block'] ?? null;
+    return $course[$prefix . 'code'] . ($block ? " ({$block})" : '');
+}
+
+/**
+ * "MWF 8:00 AM - 9:00 AM" from a class's days and times. Classes from before days and times existed
+ * show their old free-text schedule.
+ */
+function class_schedule(array $course): string
+{
+    if (!empty($course['days']) && !empty($course['start_time']) && !empty($course['end_time'])) {
+        $days = implode('', array_map(fn($day) => CLASS_DAYS[$day] ?? $day, explode(',', $course['days'])));
+        return $days . ' ' . format_time_range($course['start_time'], $course['end_time']);
+    }
+    return trim((string) ($course['schedule'] ?? ''));
 }
 
 /* ---------------------------------------------------------------- display helpers */
@@ -374,8 +459,14 @@ function content_form(array $user, string $type): void
                                 $req = !empty($field['required']);
                             ?>
                             <div class="form-group">
-                                <label class="form-label" for="<?= e($id) ?>"><?= e($field['label']) ?><?= $req ? ' <span class="required">*</span>' : '' ?></label>
-                                <?php if ($field['type'] === 'textarea'): ?>
+                                <label class="form-label"<?= $field['type'] !== 'days' ? ' for="' . e($id) . '"' : '' ?>><?= e($field['label']) ?><?= $req ? ' <span class="required">*</span>' : '' ?></label>
+                                <?php if ($field['type'] === 'days'): ?>
+                                <div class="day-picker" id="<?= e($id) ?>" role="group" aria-label="<?= e($field['label']) ?>">
+                                    <?php foreach (array_keys(CLASS_DAYS) as $day): ?>
+                                    <label><input type="checkbox" name="<?= e($name) ?>" value="<?= e($day) ?>"> <?= e($day) ?></label>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php elseif ($field['type'] === 'textarea'): ?>
                                 <textarea class="form-textarea" id="<?= e($id) ?>" name="<?= e($name) ?>" maxlength="<?= (int) $field['max'] ?>" rows="4"></textarea>
                                 <?php elseif ($field['type'] === 'faculty'): ?>
                                 <select class="form-select" id="<?= e($id) ?>" name="<?= e($name) ?>">
@@ -391,11 +482,11 @@ function content_form(array $user, string $type): void
                                 <select class="form-select" id="<?= e($id) ?>" name="<?= e($name) ?>">
                                     <option value="">Select a course</option>
                                     <?php foreach ($courses as $course): ?>
-                                    <option value="<?= (int) $course['id'] ?>"><?= e($course['code'] . ' - ' . $course['title']) ?></option>
+                                    <option value="<?= (int) $course['id'] ?>"><?= e(class_name($course) . ' - ' . $course['title']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <?php if (!$courses): ?>
-                                <div class="field-note"><?= $user['role'] === 'faculty' ? 'No courses are assigned to you yet. Ask the admin to assign you a course.' : 'No courses yet. Add one on the Courses page first.' ?></div>
+                                <div class="field-note"><?= $user['role'] === 'faculty' ? "You don't teach any classes yet. Pick yours on the Courses page." : 'No courses yet. Add one on the Courses page first.' ?></div>
                                 <?php endif; ?>
                                 <?php elseif ($field['type'] === 'select'): ?>
                                 <select class="form-select" id="<?= e($id) ?>" name="<?= e($name) ?>">
@@ -533,10 +624,44 @@ function scholarship_list(array $user, array $items): void
     <?php
 }
 
+/** Faculty buttons on a class: "Teach this class" when it has no instructor (unless it clashes), "Drop" on their own. */
+function teach_actions(array $user, array $course): void
+{
+    $name = class_name($course) . ' - ' . $course['title'];
+    $details = implode(' • ', array_filter([
+        $course['block'] ? 'Block ' . $course['block'] : null,
+        class_schedule($course) ?: 'Schedule to be announced',
+        $course['room'],
+    ]));
+    if ($course['faculty_id'] === null) {
+        $clash = schedule_clash('faculty_id', (int) $user['id'], $course, (int) $course['id']);
+        if ($clash) {
+            ?>
+                                    <div class="clash-note"><i class="fa-solid fa-triangle-exclamation"></i> Clashes with your <?= e(class_name($clash)) ?></div>
+            <?php
+            return;
+        }
+        ?>
+                                    <button type="button" class="btn btn-primary btn-sm nowrap" data-class-teach="<?= (int) $course['id'] ?>" data-name="<?= e($name) ?>" data-details="<?= e($details) ?>">
+                                        <i class="fa-solid fa-chalkboard-user"></i> Teach this class
+                                    </button>
+        <?php
+    } elseif ((int) $course['faculty_id'] === (int) $user['id']) {
+        ?>
+                                    <button type="button" class="btn btn-outline btn-sm content-remove nowrap" data-class-drop="<?= (int) $course['id'] ?>" data-name="<?= e($name) ?>">
+                                        <i class="fa-solid fa-right-from-bracket"></i> Drop
+                                    </button>
+        <?php
+    }
+}
+
+/** Table of classes. With $showActions: Edit / Remove for the admin, Teach / Drop for faculty. */
 function course_table(array $user, array $items, bool $showActions, string $emptyTitle, string $emptyText): void
 {
-    $showActions = $showActions && can_manage_content($user, 'courses');
-    $columns = ['Code', 'Course', 'Units', 'Schedule', 'Room', 'Faculty', 'Students'];
+    $showActions = $showActions && (can_manage_content($user, 'courses') || $user['role'] === 'faculty');
+    // Faculty picking classes: every row is either theirs or open, so the Faculty column says nothing new
+    $showFaculty = !($showActions && $user['role'] === 'faculty');
+    $columns = ['Code', 'Course', 'Block', 'Units', 'Schedule', 'Room', ...($showFaculty ? ['Faculty'] : []), 'Students'];
     $orDash = fn(?string $value, string $dash = '—') => ($value ?? '') !== '' ? e($value) : $dash;
     ?>
                 <div class="table-responsive">
@@ -557,13 +682,22 @@ function course_table(array $user, array $items, bool $showActions, string $empt
                             <tr>
                                 <td class="nowrap"><strong><?= e($item['code']) ?></strong></td>
                                 <td><?= e($item['title']) ?></td>
+                                <td class="nowrap"><?= $orDash($item['block']) ?></td>
                                 <td><?= (int) $item['units'] ?></td>
-                                <td class="muted"><?= $orDash($item['schedule']) ?></td>
+                                <td class="muted nowrap"><?= $orDash(class_schedule($item)) ?></td>
                                 <td class="muted"><?= $orDash($item['room']) ?></td>
-                                <td class="muted"><?= $orDash($item['person_name'], 'Not assigned') ?></td>
+                                <?php if ($showFaculty): ?>
+                                <td class="muted"><?= $orDash($item['person_name'], 'Open class') ?></td>
+                                <?php endif; ?>
                                 <td><span class="badge badge-outline"><?= (int) ($item['enrolled'] ?? 0) ?></span></td>
                                 <?php if ($showActions): ?>
-                                <td style="text-align: right;"><?php content_actions($user, 'courses', $item, $item['code'] . ' ' . $item['title']); ?></td>
+                                <td style="text-align: right;">
+                                    <?php if ($user['role'] === 'faculty') {
+                                        teach_actions($user, $item);
+                                    } else {
+                                        content_actions($user, 'courses', $item, class_name($item) . ' ' . $item['title']);
+                                    } ?>
+                                </td>
                                 <?php endif; ?>
                             </tr>
                             <?php endforeach; ?>
@@ -604,7 +738,7 @@ function assignment_list(array $user, array $items, bool $compact = false, strin
                             <div>
                                 <h3 class="content-item-title"><?= e($item['title']) ?></h3>
                                 <div class="content-meta">
-                                    <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e($item['course_code']) ?></span>
+                                    <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e(class_name($item, 'course_')) ?></span>
                                     <span><i class="fa-regular fa-calendar"></i> Due <?= e($due) ?></span>
                                     <span class="badge <?= $badgeClass ?>"><?= e($badgeText) ?></span>
                                 </div>
@@ -640,7 +774,7 @@ function exam_list(array $user, array $items, bool $compact = false, string $emp
                                 <div>
                                     <h3 class="content-item-title"><?= e($item['title']) ?></h3>
                                     <div class="content-meta">
-                                        <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e($item['course_code']) ?></span>
+                                        <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e(class_name($item, 'course_')) ?></span>
                                         <span class="badge badge-primary"><?= e($item['exam_type']) ?></span>
                                         <span><i class="fa-regular fa-calendar"></i> <?= e(format_date($item['exam_date'], 'l, M j, Y')) ?></span>
                                         <span><i class="fa-regular fa-clock"></i> <?= e(format_time_range($item['start_time'], $item['end_time'])) ?></span>

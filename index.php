@@ -13,7 +13,7 @@ $gpa = gpa($myCourses);
 $assignmentsDue = content_items('assignments', $where, $params);
 [$where, $params] = scoped($user, 'a.exam_date >= CURDATE()');
 $upcomingExams = content_items('exams', $where, $params);
-$recentGrades = array_filter($myCourses, fn($c) => $c['midterm'] !== null || $c['final'] !== null);
+$recentGrades = array_filter($myCourses, 'has_grades');
 usort($recentGrades, fn($a, $b) => strcmp((string) $b['graded_at'], (string) $a['graded_at']));
 $recentGrades = array_slice($recentGrades, 0, 5);
 $latestAnnouncements = content_items('announcements', '', [], 3);
@@ -26,7 +26,7 @@ $quickLinks = [
     ['pages/academics/schedule.php', 'fa-calendar-alt', 'Schedule'],
     ['pages/communication/messaging.php', 'fa-envelope', 'Messages'],
     ['pages/admin/scholarships.php', 'fa-graduation-cap', 'Scholarships'],
-    ['pages/communication/office-hours.php', 'fa-video', 'Office Hours'],
+    ['pages/academics/exams.php', 'fa-file-alt', 'Exams'],
 ];
 $allowed = allowed_pages('student');
 
@@ -76,17 +76,18 @@ app_stats([
                         <?php $cardHeader('fa-chart-bar', 'Recent Grades', 'pages/academics/grades.php'); ?>
                         <div class="table-responsive">
                             <table class="data-table">
-                                <thead><tr><th>Course</th><th>Midterm</th><th>Final</th><th>Final rating</th><th>Remarks</th></tr></thead>
+                                <thead><tr><th>Course</th><th>Prelim</th><th>Midterm</th><th>Final</th><th>Final rating</th><th>Remarks</th></tr></thead>
                                 <tbody>
                                     <?php if (!$recentGrades): ?>
-                                    <tr><td colspan="5"><?php app_empty('fa-chart-bar', 'No grades yet', 'Grades appear here once your instructors post them.'); ?></td></tr>
+                                    <tr><td colspan="6"><?php app_empty('fa-chart-bar', 'No grades yet', 'Grades appear here once your instructors post them.'); ?></td></tr>
                                     <?php endif; ?>
                                     <?php foreach ($recentGrades as $course):
-                                        $rating = final_rating($course['midterm'], $course['final']);
+                                        $rating = final_rating($course);
                                         [$badge, $remark] = grade_remarks($rating);
                                     ?>
                                     <tr>
-                                        <td><strong><?= e($course['code']) ?></strong> <span class="muted"><?= e($course['title']) ?></span></td>
+                                        <td><strong><?= e(class_name($course)) ?></strong> <span class="muted"><?= e($course['title']) ?></span></td>
+                                        <td><?= e(format_grade($course['prelim'])) ?></td>
                                         <td><?= e(format_grade($course['midterm'])) ?></td>
                                         <td><?= e(format_grade($course['final'])) ?></td>
                                         <td><strong><?= e(format_grade($rating)) ?></strong></td>

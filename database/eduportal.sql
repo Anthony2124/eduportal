@@ -83,14 +83,17 @@ CREATE TABLE IF NOT EXISTS courses (
     code        VARCHAR(20)       NOT NULL,               -- e.g. CS 201
     title       VARCHAR(150)      NOT NULL,
     units       TINYINT UNSIGNED  NOT NULL,
-    schedule    VARCHAR(100)      NULL,                   -- e.g. MWF 8:00 - 9:00 AM
+    block       VARCHAR(30)       NULL,                   -- class block / section, e.g. BSIT 2-A
+    days        VARCHAR(30)       NULL,                   -- class days, e.g. Mon,Wed,Fri
+    start_time  TIME              NULL,
+    end_time    TIME              NULL,
     room        VARCHAR(60)       NULL,
-    faculty_id  INT UNSIGNED      NULL,                   -- assigned faculty member
+    faculty_id  INT UNSIGNED      NULL,                   -- the instructor (NULL = open class faculty can pick)
     created_by  INT UNSIGNED      NULL,
     created_at  TIMESTAMP         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP         NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_courses_code (code),
+    UNIQUE KEY uq_courses_code_block (code, block),       -- the same course can be offered to several blocks
     CONSTRAINT fk_courses_faculty FOREIGN KEY (faculty_id) REFERENCES users (id) ON DELETE SET NULL,
     CONSTRAINT fk_courses_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
@@ -148,7 +151,8 @@ CREATE TABLE IF NOT EXISTS grades (
     id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
     course_id   INT UNSIGNED  NOT NULL,
     student_id  INT UNSIGNED  NOT NULL,
-    midterm     DECIMAL(3,2)  NULL,                     -- 1.00 (highest) to 5.00 (failed)
+    prelim      DECIMAL(3,2)  NULL,                     -- 1.00 (highest) to 5.00 (failed)
+    midterm     DECIMAL(3,2)  NULL,
     final       DECIMAL(3,2)  NULL,
     graded_by   INT UNSIGNED  NULL,
     updated_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

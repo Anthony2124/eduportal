@@ -25,7 +25,7 @@ function chat_list(array $user): array
 {
     [$where, $params] = course_scope($user);
     $stmt = db()->prepare(
-        "SELECT c.id, c.code, c.title, c.faculty_id, CONCAT(f.first_name, ' ', f.last_name) AS person_name,
+        "SELECT c.id, c.code, c.block, c.title, c.faculty_id, CONCAT(f.first_name, ' ', f.last_name) AS person_name,
                 (SELECT COUNT(*) FROM enrollments x WHERE x.course_id = c.id) AS students,
                 m.id AS last_id, m.kind AS last_kind, m.body AS last_body, m.created_at AS last_at, m.user_id AS last_user_id,
                 u.first_name AS last_first_name, u.last_name AS last_last_name,
@@ -38,7 +38,7 @@ function chat_list(array $user): array
          LEFT JOIN users u ON u.id = m.user_id
          LEFT JOIN chat_reads r ON r.course_id = c.id AND r.user_id = ?" .
         ($where ? " WHERE $where" : '') .
-        ' ORDER BY m.id IS NULL, m.id DESC, c.code'
+        ' ORDER BY m.id IS NULL, m.id DESC, c.code, c.block'
     );
     $stmt->execute([$user['id'], $user['id'], ...$params]);
     return $stmt->fetchAll();
@@ -58,7 +58,7 @@ function chat_list_json(array $chat, array $user): array
     }
     return [
         'id' => (int) $chat['id'],
-        'code' => $chat['code'],
+        'code' => class_name($chat),
         'title' => $chat['title'],
         'members' => (int) $chat['students'] + ($chat['faculty_id'] !== null ? 1 : 0),
         'preview' => mb_strimwidth(preg_replace('/\s+/', ' ', $preview), 0, 90, '…'),

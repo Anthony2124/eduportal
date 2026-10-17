@@ -22,7 +22,7 @@ app_page_header('Messages', match ($user['role']) {
 if (!$chats) {
     app_empty_card('fa-comments', 'Class Group Chats', 'fa-comments', 'No group chats yet', match ($user['role']) {
         'student' => "You're added to a class group chat automatically when you're enrolled in a course.",
-        'faculty' => 'A group chat appears for each course the admin assigns to you.',
+        'faculty' => 'A group chat appears for each class you teach. Pick classes on the Courses page.',
         default => 'Every course gets a group chat. Add courses on the Courses page.',
     });
     app_page_end();
@@ -37,12 +37,12 @@ if (!$chats) {
                     <nav class="chat-list" id="chat-list"></nav>
                 </aside>
 
-                <section class="chat-pane card" aria-label="<?= e($current['code']) ?> group chat">
+                <section class="chat-pane card" aria-label="<?= e(class_name($current)) ?> group chat">
                     <header class="chat-header">
                         <a href="messaging.php" class="chat-back" aria-label="Back to chats"><i class="fa-solid fa-arrow-left"></i></a>
                         <div class="chat-icon"><i class="fa-solid fa-users"></i></div>
                         <div class="chat-header-text">
-                            <h2><?= e($current['code'] . ' - ' . $current['title']) ?></h2>
+                            <h2><?= e(class_name($current) . ' - ' . $current['title']) ?></h2>
                             <p>
                                 <?= count($members) ?> <?= count($members) === 1 ? 'member' : 'members' ?>
                                 <?php if ($instructor): ?> • Instructor: <?= e($instructor) ?><?php endif; ?>
@@ -60,7 +60,7 @@ if (!$chats) {
 
                     <form class="chat-composer" id="chat-composer" autocomplete="off">
                         <textarea name="body" rows="1" maxlength="<?= CHAT_MAX_LENGTH ?>" aria-label="Message"
-                                  placeholder="Message <?= e($current['code']) ?>…"></textarea>
+                                  placeholder="Message <?= e(class_name($current)) ?>…"></textarea>
                         <button type="submit" class="chat-send" aria-label="Send" disabled><i class="fa-solid fa-paper-plane"></i></button>
                     </form>
                 </section>
@@ -69,7 +69,7 @@ if (!$chats) {
             <div class="modal-overlay" id="chat-members-modal">
                 <div class="modal" role="dialog" aria-modal="true" aria-labelledby="chat-members-title" style="max-width: 460px;">
                     <div class="modal-header">
-                        <h3 class="modal-title" id="chat-members-title"><?= e($current['code']) ?> members</h3>
+                        <h3 class="modal-title" id="chat-members-title"><?= e(class_name($current)) ?> members</h3>
                         <button type="button" class="modal-close-btn" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <div class="modal-body chat-members">

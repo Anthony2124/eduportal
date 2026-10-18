@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 const EDUPORTAL_API = true;
 require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/../includes/submissions.php';
 
 $input = read_json_request();
 
@@ -84,6 +85,7 @@ function action_delete_user(array $admin, array $input): never
     }
 
     // The deleted user's open sessions stop working on their next request (current_user() finds no row)
+    delete_submission_files('s.student_id = ?', [$id]); // their uploaded work
     db()->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
     log_activity($admin, 'account', 'Deleted an account',
         "{$user['first_name']} {$user['last_name']} (" . ROLE_NAMES[$user['role']] . ", {$user['id_number']})");

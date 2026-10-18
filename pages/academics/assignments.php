@@ -1,8 +1,8 @@
 <?php
-// Assignments: faculty (their courses) and the admin (every course) add, edit and remove them;
-// students see the ones for courses they're enrolled in.
+// Assignments: faculty add, edit and remove them for their courses; students see the ones for courses they're
+// enrolled in, with where their work is. Each opens its own page (pages/academics/assignment.php) to turn in work.
 require __DIR__ . '/../../includes/app_shell.php';
-require __DIR__ . '/../../includes/content.php';
+require __DIR__ . '/../../includes/submissions.php';
 $page = 'pages/academics/assignments.php';
 $user = require_page_access($page);
 

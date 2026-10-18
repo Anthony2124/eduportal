@@ -96,6 +96,7 @@ const CONTENT_TYPES = [
             'due_date' => ['label' => 'Due date', 'type' => 'date', 'required' => true],
             'due_time' => ['label' => 'Due time', 'type' => 'time'],
             'instructions' => ['label' => 'Instructions', 'type' => 'textarea', 'max' => 5000],
+            'points' => ['label' => 'Points', 'type' => 'number', 'min' => 1, 'max' => 1000, 'placeholder' => 'e.g. 100 (leave empty if not graded)'],
         ],
     ],
     'exams' => [
@@ -820,63 +821,6 @@ function course_table(array $user, array $items, bool $showActions, string $empt
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </div>
-    <?php
-}
-
-/** "Due in 3 days" / "Due today" / "Past due" badge for an assignment. */
-function due_badge(string $dueDate): array
-{
-    $days = (int) round((strtotime($dueDate) - strtotime(date('Y-m-d'))) / 86400);
-    return match (true) {
-        $days < 0 => ['badge-danger', 'Past due'],
-        $days === 0 => ['badge-warning', 'Due today'],
-        $days === 1 => ['badge-warning', 'Due tomorrow'],
-        $days <= 3 => ['badge-warning', "Due in {$days} days"],
-        default => ['badge-primary', "Due in {$days} days"],
-    };
-}
-
-function assignment_list(array $user, array $items, bool $compact = false, string $emptyTitle = 'No assignments yet',
-                         string $emptyText = 'Assignments from your courses will appear here.'): void
-{
-    if (!$items) {
-        app_empty('fa-clipboard-list', $emptyTitle, $emptyText);
-        return;
-    }
-    ?>
-                <div class="content-list<?= $compact ? ' compact' : '' ?>">
-                    <?php foreach ($items as $item):
-                        [$badgeClass, $badgeText] = due_badge($item['due_date']);
-                        $due = format_date($item['due_date'], 'D, M j, Y') . ($item['due_time'] ? ' at ' . date('g:i A', strtotime($item['due_time'])) : '');
-                    ?>
-                    <article class="content-item"<?= detail_attr([
-                        'kicker' => 'Assignment',
-                        'title' => $item['title'],
-                        'meta' => [
-                            ['fa-solid fa-book', class_name($item, 'course_') . ' - ' . $item['course_title']],
-                            ['fa-regular fa-calendar', 'Due ' . $due],
-                        ],
-                        'badges' => [[$badgeClass, $badgeText]],
-                        'sections' => [['Instructions', $item['instructions'] ?? '']],
-                        'link' => $compact ? detail_link($user, 'pages/academics/assignments.php', 'All assignments') : null,
-                    ]) ?>>
-                        <div class="content-item-head">
-                            <div>
-                                <h3 class="content-item-title"><?= detail_button($item['title']) ?></h3>
-                                <div class="content-meta">
-                                    <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e(class_name($item, 'course_')) ?></span>
-                                    <span><i class="fa-regular fa-calendar"></i> Due <?= e($due) ?></span>
-                                    <span class="badge <?= $badgeClass ?>"><?= e($badgeText) ?></span>
-                                </div>
-                            </div>
-                            <?php if (!$compact) content_actions($user, 'assignments', $item, $item['title']); ?>
-                        </div>
-                        <?php if (!$compact && $item['instructions']): ?>
-                        <div class="content-body"><?= nl2br(e($item['instructions'])) ?></div>
-                        <?php endif; ?>
-                    </article>
-                    <?php endforeach; ?>
                 </div>
     <?php
 }

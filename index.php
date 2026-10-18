@@ -11,6 +11,10 @@ $myCourses = student_courses((int) $user['id']);
 $gpa = gpa($myCourses);
 [$where, $params] = scoped($user, 'a.due_date >= CURDATE()');
 $assignmentsDue = content_items('assignments', $where, $params);
+// still to do: not turned in (or returned) yet
+$myWork = student_submissions((int) $user['id'], array_map('intval', array_column($assignmentsDue, 'id')));
+$assignmentsDue = array_values(array_filter($assignmentsDue,
+    fn($a) => in_array(submission_status($a, $myWork[$a['id']] ?? null)[0], ['assigned', 'missing'], true)));
 [$where, $params] = scoped($user, 'a.exam_date >= CURDATE()');
 $upcomingExams = content_items('exams', $where, $params);
 $recentGrades = array_filter($myCourses, 'has_grades');

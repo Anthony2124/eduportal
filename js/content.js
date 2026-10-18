@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (detailItem && (!control || control.matches('[data-detail-trigger]')) && !String(window.getSelection())) {
       openDetail(JSON.parse(detailItem.dataset.detail), control || detailItem);
     }
+    // Items with their own page (assignments): clicking anywhere on them opens it
+    const linkItem = e.target.closest('[data-href]');
+    if (linkItem && !control && !String(window.getSelection())) {
+      window.location.href = linkItem.dataset.href;
+    }
   });
 
   // The details dialog also closes with Escape; focus goes back to what opened it

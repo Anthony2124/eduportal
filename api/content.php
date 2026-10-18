@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 const EDUPORTAL_API = true;
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/../includes/content.php';
+require __DIR__ . '/../includes/submissions.php'; // also loads includes/content.php
 
 $input = read_json_request();
 
@@ -114,6 +114,10 @@ function delete_content(array $user, string $type, array $input): never
     $item = find_content($type, (int) ($input['id'] ?? 0));
     if (!can_edit_content($user, $type, $item)) {
         fail("You can only remove {$def['label']}s you posted.", 403);
+    }
+    // students' uploaded work goes with the assignment (or every assignment of the course)
+    if ($type === 'assignments' || $type === 'courses') {
+        delete_submission_files($type === 'assignments' ? 'a.id = ?' : 'a.course_id = ?', [$item['id']]);
     }
     db()->prepare("DELETE FROM {$def['table']} WHERE id = ?")->execute([$item['id']]);
     log_activity($user, 'content', 'Removed ' . $def['label'], content_name($type, $item));

@@ -20,6 +20,12 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
   (and removed when they leave the course), together with the course's Faculty. Every program also has a chat for
   the Admin and the Faculty who teach its classes. The Admin is only in the program chats, not the class chats.
   New messages show up within a few seconds, with unread counts in the chat list.
+- **Turning in work** (like Google Classroom): each assignment has its own page. Students attach files (up to
+  10 MB each) and/or write an answer or paste links, then **Turn in** (or **Mark as done**); they can **Unsubmit**
+  to change it until it's returned. Faculty see who turned it in, who is missing, open each student's work and
+  **Return** it with a score (out of the assignment's points) and a private comment. Files are kept in
+  `uploads/submissions/`, which the web server never serves directly, and only the student and their faculty can
+  open them.
 - **Click for details:** announcements, events, scholarships, courses, assignments, exams and grades open a
   details dialog when clicked (on the dashboard too, with a link to the full page).
 - **Schedule** shows the week as a bar chart: a row per day, a bar per class, a color per subject. Click a bar
@@ -69,6 +75,8 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 | `pages/admin/logs.php` | Activity Logs; entries are written by `log_activity()` in `api/bootstrap.php` |
 | `pages/smart/analytics.php`, `js/analytics.js` | Analytics charts |
 | `api/profile.php` | Students set their gender (Settings) |
+| `pages/academics/assignment.php`, `includes/submissions.php`, `api/submissions.php`, `js/submissions.js` | An assignment's page: turning in work, reviewing and returning it |
+| `uploads/` | Students' uploaded work (not in git; `uploads/.htaccess` blocks direct access) |
 | `includes/content.php`, `api/content.php`, `js/content.js` | Add / Edit / Remove for courses, assignments, exams, events, scholarships and announcements (fields and permissions are in `CONTENT_TYPES`) |
 | `includes/academics.php`, `api/academics.php` | Enrollment and grades (rosters, GPA, the grading scale) |
 | `includes/chat.php`, `api/chat.php`, `js/chat.js` | Class and program group chats on the Messages page (who is in each chat, sending, unread counts) |

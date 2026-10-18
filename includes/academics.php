@@ -5,6 +5,7 @@
  * Admins work with every course; faculty only with the courses assigned to them (teaches_course()).
  */
 require_once __DIR__ . '/content.php';
+require_once __DIR__ . '/submissions.php'; // assignment lists show the student's work
 
 const LOWEST_PASSING_GRADE = 3.00;
 

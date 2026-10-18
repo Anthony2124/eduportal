@@ -35,10 +35,10 @@ function initLogoutConfirm() {
 }
 
 /**
- * "Are you sure?" box. Resolves true when the red button is clicked; false for Cancel,
- * the Esc key or a click outside the box.
+ * "Are you sure?" box. Resolves true when the confirm button is clicked; false for Cancel,
+ * the Esc key or a click outside the box. The button is red, or indigo with tone 'primary' (e.g. "Turn in").
  */
-function confirmAction(title, text, confirmLabel, icon = 'fa-triangle-exclamation') {
+function confirmAction(title, text, confirmLabel, icon = 'fa-triangle-exclamation', tone = 'danger') {
   let dialog = document.getElementById('confirm-dialog');
   if (!dialog) {
     const style = document.createElement('style');
@@ -58,6 +58,9 @@ function confirmAction(title, text, confirmLabel, icon = 'fa-triangle-exclamatio
       .confirm-dialog-cancel:hover { background: #F1F5F9; }
       .confirm-dialog-confirm { background: #EF4444; border: 1px solid #EF4444; color: #FFFFFF; }
       .confirm-dialog-confirm:hover { background: #DC2626; }
+      .confirm-dialog.primary .confirm-dialog-icon { background: rgba(79, 70, 229, 0.1); color: #4F46E5; }
+      .confirm-dialog.primary .confirm-dialog-confirm { background: #4F46E5; border-color: #4F46E5; }
+      .confirm-dialog.primary .confirm-dialog-confirm:hover { background: #3730A3; }
       .confirm-dialog-actions button:focus-visible { outline: 3px solid rgba(79, 70, 229, 0.35); outline-offset: 2px; }
     `;
     document.head.appendChild(style);
@@ -87,6 +90,7 @@ function confirmAction(title, text, confirmLabel, icon = 'fa-triangle-exclamatio
     });
   }
 
+  dialog.classList.toggle('primary', tone === 'primary');
   dialog.querySelector('.confirm-dialog-icon i').className = `fa-solid ${icon}`;
   dialog.querySelector('h3').textContent = title;
   dialog.querySelector('p').textContent = text;

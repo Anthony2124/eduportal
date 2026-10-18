@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     due_date      DATE          NOT NULL,
     due_time      TIME          NULL,
     instructions  TEXT          NULL,
+    points        SMALLINT UNSIGNED NULL,               -- the highest score; NULL = not graded
     created_by    INT UNSIGNED  NULL,
     created_at    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP     NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -229,4 +230,39 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     PRIMARY KEY (id),
     KEY idx_activity_logs_created (created_at),
     CONSTRAINT fk_activity_logs_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Assignment submissions (like Google Classroom): a student's work for an assignment - an answer or links and
+-- uploaded files - turned in, then returned by the faculty member with a score and private feedback.
+-- turned_in_at NULL = not turned in yet (or unsubmitted); returned_at set = returned (graded).
+CREATE TABLE IF NOT EXISTS submissions (
+    id             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    assignment_id  INT UNSIGNED  NOT NULL,
+    student_id     INT UNSIGNED  NOT NULL,
+    body           TEXT          NULL,                  -- the student's answer or links
+    turned_in_at   TIMESTAMP     NULL,
+    score          DECIMAL(6,2)  NULL,
+    feedback       TEXT          NULL,                  -- private comment from the faculty member
+    returned_at    TIMESTAMP     NULL,
+    graded_by      INT UNSIGNED  NULL,
+    created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP     NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_submissions_assignment_student (assignment_id, student_id),
+    CONSTRAINT fk_submissions_assignment FOREIGN KEY (assignment_id) REFERENCES assignments (id) ON DELETE CASCADE,
+    CONSTRAINT fk_submissions_student FOREIGN KEY (student_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_submissions_grader FOREIGN KEY (graded_by) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Files attached to a submission. They're saved under a random name in uploads/submissions/ (not reachable from
+-- the web) and downloaded through api/submissions.php, which checks who is asking.
+CREATE TABLE IF NOT EXISTS submission_files (
+    id             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    submission_id  INT UNSIGNED  NOT NULL,
+    original_name  VARCHAR(255)  NOT NULL,
+    stored_name    VARCHAR(80)   NOT NULL,
+    size           INT UNSIGNED  NOT NULL,
+    created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_submission_files_submission FOREIGN KEY (submission_id) REFERENCES submissions (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

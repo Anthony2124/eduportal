@@ -3,7 +3,7 @@
 A school portal for **Admins, Faculty and Students**, built with PHP and MySQL to run on XAMPP.
 
 - **Students** create their own account (details, including program, year level and gender → link Gmail → 6-digit code sent to Gmail) and sign in with their Student ID or Gmail and password.
-- **Faculty** accounts are created by the Admin. Faculty sign in with their Employee ID or Gmail, password, and a code sent to their Gmail.
+- **Faculty** accounts are created by the Admin. Faculty sign in with their Employee ID or Gmail and password.
 - **Admin** is a built-in account. It manages accounts and can open every page.
 - Every page shares one sidebar and top bar, and each role only sees (and can only open) its own pages.
 - **Add / Edit / Remove:** the Admin manages Courses, Events and Scholarships;
@@ -48,7 +48,7 @@ A school portal for **Admins, Faculty and Students**, built with PHP and MySQL t
 4. Copy `api/config.example.php` to `api/config.php`, then fill in the Gmail account that sends the 6-digit codes
    under `smtp`: the Gmail address and a Gmail **App Password**
    (Google Account → Security → turn on 2-Step Verification → App passwords → create one).
-   Without this, student sign-up and faculty sign-in show "Verification emails aren't set up".
+   Without this, student sign-up shows "Verification emails aren't set up".
    Just testing on your own computer? Set `'demo_mode' => true` instead, and codes are shown on screen.
 5. Open http://localhost/eduportal/
 

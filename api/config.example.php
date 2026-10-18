@@ -3,7 +3,7 @@
  * EduPortal settings template. Copy this file to api/config.php and fill it in.
  * api/config.php is not committed to git because it holds passwords.
  *
- * Sign-up and faculty sign-in email a 6-digit code, so fill in the smtp Gmail login below
+ * Student sign-up emails a 6-digit code to verify the Gmail, so fill in the smtp Gmail login below
  * (a Gmail App Password - see the steps above 'smtp'). Without it those steps show an error,
  * unless demo_mode is turned on for testing.
  * Leaving google_client_id empty is fine: users type their Gmail address instead of choosing a Google account.
@@ -34,7 +34,7 @@ return [
         'from_name' => 'EduPortal',
     ],
 
-    // true = show sign-in codes on screen instead of emailing them, when no Gmail login is set above.
+    // true = show sign-up codes on screen instead of emailing them, when no Gmail login is set above.
     // ONLY for testing on your own computer: anyone could then sign up with someone else's Gmail.
     'demo_mode' => false,
 

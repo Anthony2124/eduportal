@@ -135,8 +135,8 @@ app_page_start($user, 'admin.php', 'Admin Dashboard', ['id' => 'page-search', 'p
                             </div>
                         </div>
                         <p class="person-sub" style="margin-bottom: 14px;">
-                            Give the faculty member their Employee ID and password. They sign in on the Faculty tab,
-                            then enter the code sent to this Gmail.
+                            Give the faculty member their Employee ID and password. They sign in on the Faculty tab
+                            with either their Employee ID or this Gmail.
                         </p>
                         <div class="form-error" id="faculty-error" hidden></div>
                         <button type="submit" class="btn btn-primary" id="faculty-submit">

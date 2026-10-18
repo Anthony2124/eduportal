@@ -2069,14 +2069,10 @@
 
                 setButtonLoading(signInBtn, true, 'Verifying credentials...');
                 try {
+                    // Every role is signed in right away (codes are only for verifying a new student's Gmail)
                     const data = await api('login', { role: currentRole, identifier, password, remember: rememberMe.checked });
-                    if (data.signedIn) {
-                        // Students and the built-in admin are signed in right away (no code to verify)
-                        showToast(`Welcome back, ${data.firstName}! Redirecting...`, 'success', 2500);
-                        redirectToDashboard(700);
-                    } else {
-                        openOtpView('signin', data);
-                    }
+                    showToast(`Welcome back, ${data.firstName}! Redirecting...`, 'success', 2500);
+                    redirectToDashboard(700);
                 } catch (err) {
                     showApiError(err, { identifier: studentIdInput, password: passwordInput }, loginForm);
                 } finally {

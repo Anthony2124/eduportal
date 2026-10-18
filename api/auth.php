@@ -5,10 +5,9 @@
  *   POST api/auth.php?action=init      settings for the page + whether already signed in
  *   POST api/auth.php?action=register  student sign-up step 1: check details, keep them in the session
  *   POST api/auth.php?action=link      student sign-up step 2: link Google account (or Gmail in demo mode), send OTP
- *   POST api/auth.php?action=login     sign in with ID/username/Gmail + password; faculty then get an OTP
- *                                      (students and the built-in admin are signed in right away)
- *   POST api/auth.php?action=google    sign in with Google (no OTP needed)
- *   POST api/auth.php?action=verify    check the OTP; creates the account or finishes sign-in
+ *   POST api/auth.php?action=login     sign in with ID/username/Gmail + password (every role, no code)
+ *   POST api/auth.php?action=google    sign in with Google
+ *   POST api/auth.php?action=verify    check the sign-up OTP and create the account
  *   POST api/auth.php?action=resend    send a new OTP
  *   POST api/auth.php?action=me        the signed-in user and the pages their role can open,
  *                                      used by js/main.js on every page (401 if signed out)
@@ -129,7 +128,7 @@ function action_register(array $input): never
     }
 
     // Nothing is saved to the database until the Gmail is verified
-    unset($_SESSION['otp'], $_SESSION['otp_target'], $_SESSION['pending_signin']);
+    unset($_SESSION['otp'], $_SESSION['otp_target']);
     $_SESSION['pending_signup'] = $details + ['password_hash' => password_hash($password, PASSWORD_DEFAULT)];
 
     json_response(['ok' => true]);
@@ -195,17 +194,9 @@ function action_login(array $input): never
     }
     require_role($user, $role);
 
-    // Students, and accounts without a linked Gmail (the built-in admin), sign in without a code.
-    // Faculty get a code sent to their Gmail below.
-    if ($user['role'] === 'student' || $user['email'] === null) {
-        start_user_session($user, !empty($input['remember']));
-        json_response(['signedIn' => true, 'firstName' => $user['first_name']]);
-    }
-
-    unset($_SESSION['pending_signup']);
-    $_SESSION['pending_signin'] = (int) $user['id'];
-
-    json_response(issue_otp('signin', $user['email'], $user['first_name']));
+    // Every role signs in with the password alone (a code is only sent to verify a new student's Gmail)
+    start_user_session($user, !empty($input['remember']));
+    json_response(['signedIn' => true, 'firstName' => $user['first_name']]);
 }
 
 function action_google(array $input): never
@@ -258,17 +249,14 @@ function action_verify(array $input): never
     }
     unset($_SESSION['otp']);
 
-    if ($otp['purpose'] === 'signup') {
-        $user = create_account($otp['email']);
-    } else {
-        $user = isset($_SESSION['pending_signin']) ? find_user_by_id($_SESSION['pending_signin']) : null;
-        if (!$user) {
-            fail('Your sign-in session expired. Please sign in again.', 409, ['restart' => true]);
-        }
+    // Codes are only for sign-up now; one left over from an old faculty sign-in starts over
+    if ($otp['purpose'] !== 'signup') {
+        fail('This code is no longer needed. Please sign in again.', 409, ['restart' => true]);
     }
+    $user = create_account($otp['email']);
 
     start_user_session($user, !empty($input['remember']));
-    json_response(['firstName' => $user['first_name'], 'isNewAccount' => $otp['purpose'] === 'signup']);
+    json_response(['firstName' => $user['first_name'], 'isNewAccount' => true]);
 }
 
 function action_resend(): never

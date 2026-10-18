@@ -47,7 +47,7 @@ function action_create_faculty(array $admin, array $input): never
         fail('Select a department.', 422, ['field' => 'department']);
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) {
-        fail('Enter a valid Gmail address (sign-in codes are sent there).', 422, ['field' => 'email']);
+        fail('Enter a valid Gmail address.', 422, ['field' => 'email']);
     }
     if (!is_valid_password($password)) {
         fail('Use at least 8 characters with a letter and a number.', 422, ['field' => 'password']);

@@ -558,6 +558,21 @@
             display: none !important;
         }
 
+        /* Texts that differ per role (sign-in subtitle, footer prompt) share one spot that is as tall as the
+           longest of them, so switching Admin / Faculty / Student never moves the form up or down */
+        .role-text {
+            display: grid;
+        }
+
+        .role-text > * {
+            grid-area: 1 / 1;
+        }
+
+        .role-text > [hidden] {
+            display: block !important;
+            visibility: hidden;
+        }
+
         /* Form Controls */
         .auth-form {
             display: flex;
@@ -1366,7 +1381,11 @@
                 <div class="auth-view active" id="loginSection">
                     <div class="form-header">
                         <h2 class="form-title">Welcome Back!</h2>
-                        <p class="form-subtitle" id="loginSubtitle">Sign in to your student portal to continue your classes.</p>
+                        <div class="role-text">
+                            <p class="form-subtitle" data-roles="admin" hidden>Sign in to manage accounts and portal settings.</p>
+                            <p class="form-subtitle" data-roles="faculty" hidden>Sign in to manage your classes and grades.</p>
+                            <p class="form-subtitle" data-roles="student">Sign in to your student portal to continue your classes.</p>
+                        </div>
                     </div>
 
                     <!-- Who is signing in (kept in sync with the picker on Create Account) -->
@@ -1460,16 +1479,18 @@
                     </div>
 
                     <!-- Only students create their own accounts -->
-                    <p class="form-footer-prompt" data-roles="student">
-                        New student?
-                        <a href="#create-account" id="showSignupLink">Create an account</a>
-                    </p>
-                    <p class="form-footer-prompt" data-roles="faculty" hidden>
-                        Faculty accounts are created by the admin. Ask the admin if you don't have one yet.
-                    </p>
-                    <p class="form-footer-prompt" data-roles="admin" hidden>
-                        Sign in with the built-in admin username.
-                    </p>
+                    <div class="role-text">
+                        <p class="form-footer-prompt" data-roles="student">
+                            New student?
+                            <a href="#create-account" id="showSignupLink">Create an account</a>
+                        </p>
+                        <p class="form-footer-prompt" data-roles="faculty" hidden>
+                            No account yet? Ask the admin to create one.
+                        </p>
+                        <p class="form-footer-prompt" data-roles="admin" hidden>
+                            Sign in with the built-in admin username.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- VIEW 2: CREATE STUDENT ACCOUNT - DETAILS -->
@@ -1777,7 +1798,6 @@
             const googleSignInWrap = document.getElementById('googleSignInWrap');
             const googleSignInBtn = document.getElementById('googleSignInBtn');
             const showSignupLink = document.getElementById('showSignupLink');
-            const loginSubtitle = document.getElementById('loginSubtitle');
             const loginIdLabel = document.getElementById('loginIdLabel');
 
             // Sign Up Elements (students only)
@@ -1983,18 +2003,15 @@
             const ROLE_TEXT = {
                 admin: {
                     idLabel: 'Username',
-                    placeholder: 'e.g. admin',
-                    subtitle: 'Sign in to manage accounts, records and portal settings.'
+                    placeholder: 'e.g. admin'
                 },
                 faculty: {
                     idLabel: 'Employee ID or Gmail',
-                    placeholder: 'e.g. FAC-2026-014 or you@gmail.com',
-                    subtitle: 'Sign in to manage your classes, grades and announcements.'
+                    placeholder: 'e.g. FAC-2026-014 or you@gmail.com'
                 },
                 student: {
                     idLabel: 'Student ID or Gmail',
-                    placeholder: 'e.g. 2026-CS-0412 or you@gmail.com',
-                    subtitle: 'Sign in to your student portal to continue your classes.'
+                    placeholder: 'e.g. 2026-CS-0412 or you@gmail.com'
                 }
             };
             let currentRole = 'student';
@@ -2013,7 +2030,6 @@
                     el.hidden = !el.dataset.roles.split(' ').includes(role);
                 });
 
-                loginSubtitle.textContent = text.subtitle;
                 loginIdLabel.textContent = text.idLabel;
                 studentIdInput.placeholder = text.placeholder;
                 clearFieldErrors(loginForm);

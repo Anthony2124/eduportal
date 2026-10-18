@@ -1,5 +1,6 @@
 <?php
-// Class Schedule: built from courses - a student's enrolled courses, the classes a faculty member teaches,
+// Class Schedule: the week as a bar chart (a color per subject) and the class list, built from courses -
+// a student's enrolled courses, the classes a faculty member teaches,
 // or every course for the admin. To change a schedule, edit the course (Courses page).
 require __DIR__ . '/../../includes/app_shell.php';
 require __DIR__ . '/../../includes/academics.php';
@@ -15,6 +16,11 @@ $user = require_page_access($page);
 app_page_start($user, $page, 'Class Schedule');
 app_page_header('Class Schedule', $subtitle);
 ?>
+            <section class="card section-gap">
+                <?php app_card_header('fa-chart-gantt', 'Weekly Schedule', 'Each subject has its own color. Click a class for its details.'); ?>
+                <?php schedule_chart($classes); ?>
+            </section>
+
             <section class="card section-gap">
                 <?php app_card_header('fa-calendar-week', 'Classes', $user['role'] === 'admin' ? 'Change a schedule by editing the course on the Courses page' : ''); ?>
                 <?php course_table($user, $classes, false, 'No classes scheduled', $emptyText); ?>

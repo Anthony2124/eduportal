@@ -1,7 +1,8 @@
 <?php
-// Courses: the Admin adds, edits and removes classes (course + block, days, time, room) and can assign faculty.
+// Courses: the Admin picks a program, then adds, edits and removes its classes (course + block, days, time, room)
+// and can assign faculty.
 // Faculty pick open classes to teach ("Teach this class") and can drop their own. Students see the classes
-// they're enrolled in and everything offered.
+// they're enrolled in and everything offered to their program.
 require __DIR__ . '/../../includes/app_shell.php';
 require __DIR__ . '/../../includes/academics.php';
 $page = 'pages/academics/courses.php';
@@ -25,8 +26,9 @@ if ($user['role'] === 'student') {
             </section>
 
             <section class="card section-gap">
-                <?php app_card_header('fa-book', 'All Courses Offered'); ?>
-                <?php course_table($user, $courses, false, 'No courses yet', 'Courses offered this semester will appear here.'); ?>
+                <?php app_card_header('fa-book', 'Courses Offered', 'The ' . $user['program'] . ' courses this semester'); ?>
+                <?php course_table($user, array_values(array_filter($courses, fn($c) => $c['program'] === $user['program'])), false,
+                    'No courses yet', "Courses offered to {$user['program']} this semester will appear here."); ?>
             </section>
 <?php
 } elseif ($user['role'] === 'faculty') {
@@ -50,17 +52,33 @@ if ($user['role'] === 'student') {
             </section>
 <?php
 } else {
-    $open = array_filter($courses, fn($c) => $c['faculty_id'] === null);
-    app_page_header('Courses', 'Classes offered this semester. Leave Faculty empty to let faculty pick the class.');
+    // ?program= shows one program's courses, and "Add course" then starts with that program already picked
+    $program = in_array($_GET['program'] ?? '', PROGRAMS, true) ? $_GET['program'] : '';
+    $shown = $program === '' ? $courses : array_values(array_filter($courses, fn($c) => $c['program'] === $program));
+    $open = array_filter($shown, fn($c) => $c['faculty_id'] === null);
+    app_page_header('Courses', 'Pick a program, then add its courses. Leave Faculty empty to let faculty pick the class.');
     app_stats([
-        ['fa-book', 'primary', (string) count($courses), 'Classes offered'],
-        ['fa-layer-group', 'secondary', (string) array_sum(array_column($courses, 'units')), 'Total units'],
+        ['fa-book', 'primary', (string) count($shown), 'Classes offered'],
+        ['fa-layer-group', 'secondary', (string) array_sum(array_column($shown, 'units')), 'Total units'],
         ['fa-door-open', 'warning', (string) count($open), 'Open classes (no instructor)'],
     ]);
 ?>
             <section class="card section-gap">
-                <?php content_card_header($user, 'courses', 'fa-book', 'Course List'); ?>
-                <?php course_table($user, $courses, true, 'No courses yet', 'Courses offered this semester will appear here.'); ?>
+                <div class="card-header card-header-wrap">
+                    <div>
+                        <div class="card-title"><i class="fa-solid fa-book" style="color: var(--primary);"></i> Course List</div>
+                        <div class="card-subtitle"><?= $program === '' ? 'All programs' : e($program) ?></div>
+                    </div>
+                    <div class="card-tools">
+                        <?php course_picker([], null, $program); ?>
+                        <button type="button" class="btn btn-primary btn-sm" data-content-add="courses"
+                                <?= $program !== '' ? 'data-preset="' . e(json_encode(['program' => $program])) . '"' : '' ?>>
+                            <i class="fa-solid fa-plus"></i> Add course
+                        </button>
+                    </div>
+                </div>
+                <?php course_table($user, $shown, true, 'No courses yet',
+                    $program === '' ? 'Courses offered this semester will appear here.' : "Use \"Add course\" to add {$program} courses."); ?>
             </section>
 <?php
     content_form($user, 'courses');

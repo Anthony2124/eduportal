@@ -1,5 +1,5 @@
 /**
- * Class group chats (pages/communication/messaging.php). Messages come from api/chat.php; new ones are
+ * Group chats (pages/communication/messaging.php): class chats and program chats. Messages come from api/chat.php; new ones are
  * checked every few seconds, and the chat list (last message, unread counts) a little less often.
  * Uses SITE_ROOT and showToast from js/main.js.
  */
@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const sendButton = form.querySelector('.chat-send');
 
   // lastId: newest message shown; last*: what the previous message was, for grouping and day separators
-  const chat = { courseId: data.course, lastId: 0, lastSender: null, lastStamp: 0, lastDay: null, closed: false, sending: false, queue: Promise.resolve() };
+  const chat = { key: data.chat, lastId: 0, lastSender: null, lastStamp: 0, lastDay: null, closed: false, sending: false, queue: Promise.resolve() };
 
-  renderChatList(list, data.chats, chat.courseId);
+  renderChatList(list, data.chats, chat.key);
   const active = list.querySelector('.chat-list-item.active');
   if (active) active.scrollIntoView({ block: 'nearest' });
 
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadNew = (scrollDown = false) => enqueue(async () => {
     if (chat.closed) return;
     try {
-      const { messages } = await chatApi('messages', { course_id: chat.courseId, after: chat.lastId });
+      const { messages } = await chatApi('messages', { chat: chat.key, after: chat.lastId });
       const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
       if (chat.lastId === 0) box.replaceChildren(...(messages.length ? [] : [emptyChat()]));
       if (messages.length) {
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const { chats } = await chatApi('list', {});
       const scroll = list.scrollTop;
-      renderChatList(list, chats, chat.courseId);
+      renderChatList(list, chats, chat.key);
       list.scrollTop = scroll;
     } catch (err) { /* try again next time */ }
   }, CHAT_LIST_POLL_MS);
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendButton.disabled = true;
     enqueue(async () => {
       try {
-        await chatApi('send', { course_id: chat.courseId, body });
+        await chatApi('send', { chat: chat.key, body });
         input.value = '';
       } catch (err) {
         showToast(err.message, 'danger');
@@ -114,24 +114,25 @@ function el(tag, className, text) {
   return node;
 }
 
-function renderChatList(list, chats, activeId) {
+function renderChatList(list, chats, activeKey) {
   list.replaceChildren(...chats.map(item => {
-    const link = el('a', `chat-list-item${item.id === activeId ? ' active' : ''}`);
-    link.href = `?course=${item.id}`;
-    if (item.id === activeId) link.setAttribute('aria-current', 'page');
+    const active = item.key === activeKey;
+    const link = el('a', `chat-list-item${active ? ' active' : ''}`);
+    link.href = `?${item.key}`;
+    if (active) link.setAttribute('aria-current', 'page');
 
-    const icon = el('div', 'chat-icon', item.code.replace(/[^A-Za-z]/g, '').slice(0, 3) || '#');
+    const icon = el('div', `chat-icon${item.type === 'program' ? ' program' : ''}`, item.icon);
     const text = el('div', 'chat-list-text');
     const top = el('div', 'chat-list-top');
-    top.append(el('strong', '', item.code), el('span', 'chat-list-time', item.time));
+    top.append(el('strong', '', item.name), el('span', 'chat-list-time', item.time));
     text.append(top, el('div', 'chat-list-title', item.title), el('div', 'chat-list-preview', item.preview));
     link.append(icon, text);
 
     // the open chat is being read right now
-    if (item.unread > 0 && item.id !== activeId) {
+    if (item.unread > 0 && !active) {
       link.classList.add('has-unread');
       link.appendChild(el('span', 'chat-unread', item.unread > 99 ? '99+' : String(item.unread)));
-      link.setAttribute('aria-label', `${item.code}, ${item.unread} unread`);
+      link.setAttribute('aria-label', `${item.name}, ${item.unread} unread`);
     }
     return link;
   }));
@@ -140,7 +141,7 @@ function renderChatList(list, chats, activeId) {
 function emptyChat() {
   const empty = el('div', 'chat-empty');
   empty.append(el('i', 'fa-regular fa-comments'), el('div', 'empty-title', 'No messages yet'),
-    el('div', '', 'Say hello to your class!'));
+    el('div', '', 'Say hello to the group!'));
   return empty;
 }
 
@@ -202,7 +203,7 @@ function renderMessage(chat, message) {
   return fragment;
 }
 
-// Removed from the course (or signed out) while the chat was open
+// Removed from the chat (or signed out) while it was open
 function closeChat(chat, box, form, message) {
   if (chat.closed) return;
   chat.closed = true;

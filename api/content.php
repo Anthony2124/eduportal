@@ -32,6 +32,25 @@ match ($_GET['action'] ?? '') {
     default => fail('Unknown action.', 404),
 };
 
+/**
+ * What the activity log calls an item: a class by its code and block, an assignment or exam by its title and
+ * class, everything else by its title or name.
+ */
+function content_name(string $type, array $item): string
+{
+    if (!empty(CONTENT_TYPES[$type]['course_scoped'])) {
+        $stmt = db()->prepare('SELECT code, block FROM courses WHERE id = ?');
+        $stmt->execute([$item['course_id']]);
+        $course = $stmt->fetch();
+        return $item['title'] . ($course ? ' (' . class_name($course) . ')' : '');
+    }
+    return match ($type) {
+        'courses' => class_name($item) . ' - ' . $item['title'],
+        'scholarships' => $item['name'],
+        default => $item['title'],
+    };
+}
+
 function find_content(string $type, int $id): array
 {
     $stmt = db()->prepare('SELECT * FROM ' . CONTENT_TYPES[$type]['table'] . ' WHERE id = ?');
@@ -84,6 +103,7 @@ function save_content(array $user, string $type, array $input): never
         db()->prepare("INSERT INTO {$def['table']} ({$columns}) VALUES ({$placeholders})")->execute(array_values($values));
         $id = (int) db()->lastInsertId();
     }
+    log_activity($user, 'content', (isset($item) ? 'Edited ' : 'Added ') . $def['label'], content_name($type, $values));
 
     json_response(['ok' => true, 'id' => $id]);
 }
@@ -96,5 +116,6 @@ function delete_content(array $user, string $type, array $input): never
         fail("You can only remove {$def['label']}s you posted.", 403);
     }
     db()->prepare("DELETE FROM {$def['table']} WHERE id = ?")->execute([$item['id']]);
+    log_activity($user, 'content', 'Removed ' . $def['label'], content_name($type, $item));
     json_response(['ok' => true]);
 }

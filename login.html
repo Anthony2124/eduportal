@@ -1517,27 +1517,28 @@
                             </div>
                         </div>
 
-                        <div class="form-row wide-first">
-                            <div class="form-group">
-                                <label for="program" class="form-label"><span>Program</span></label>
-                                <div class="input-group">
-                                    <i class="fa-solid fa-book input-icon"></i>
-                                    <select id="program" class="form-input" required>
-                                        <option value="" disabled selected>Select program</option>
-                                        <option>BS Computer Science</option>
-                                        <option>BS Information Technology</option>
-                                        <option>BS Information Systems</option>
-                                        <option>BS Computer Engineering</option>
-                                        <option>BS Business Administration</option>
-                                        <option>BS Accountancy</option>
-                                        <option>BS Psychology</option>
-                                    </select>
-                                </div>
-                                <div class="error-message">
-                                    <i class="fa-solid fa-circle-exclamation"></i>
-                                    <span></span>
-                                </div>
+                        <div class="form-group">
+                            <label for="program" class="form-label"><span>Program</span></label>
+                            <div class="input-group">
+                                <i class="fa-solid fa-book input-icon"></i>
+                                <select id="program" class="form-input" required>
+                                    <option value="" disabled selected>Select program</option>
+                                    <option>BS Computer Science</option>
+                                    <option>BS Information Technology</option>
+                                    <option>BS Information Systems</option>
+                                    <option>BS Computer Engineering</option>
+                                    <option>BS Business Administration</option>
+                                    <option>BS Accountancy</option>
+                                    <option>BS Psychology</option>
+                                </select>
                             </div>
+                            <div class="error-message">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
                             <div class="form-group">
                                 <label for="yearLevel" class="form-label"><span>Year Level</span></label>
                                 <div class="input-group">
@@ -1549,6 +1550,22 @@
                                         <option value="3">3rd Year</option>
                                         <option value="4">4th Year</option>
                                         <option value="5">5th Year</option>
+                                    </select>
+                                </div>
+                                <div class="error-message">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="gender" class="form-label"><span>Gender</span></label>
+                                <div class="input-group">
+                                    <i class="fa-solid fa-venus-mars input-icon"></i>
+                                    <select id="gender" class="form-input" required>
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="unspecified">Prefer not to say</option>
                                     </select>
                                 </div>
                                 <div class="error-message">
@@ -1770,6 +1787,7 @@
             const signupIdInput = document.getElementById('signupIdNumber');
             const programSelect = document.getElementById('program');
             const yearLevelSelect = document.getElementById('yearLevel');
+            const genderSelect = document.getElementById('gender');
             const signupPasswordInput = document.getElementById('signupPassword');
             const confirmPasswordInput = document.getElementById('confirmPassword');
             const agreeTerms = document.getElementById('agreeTerms');
@@ -2087,7 +2105,8 @@
                     lastName: lastNameInput.value.trim(),
                     idNumber: signupIdInput.value.trim().toUpperCase(),
                     program: programSelect.value,
-                    yearLevel: yearLevelSelect.value
+                    yearLevel: yearLevelSelect.value,
+                    gender: genderSelect.value
                 };
                 const password = signupPasswordInput.value;
                 let isValid = true;
@@ -2110,6 +2129,10 @@
                 }
                 if (!details.yearLevel) {
                     setFieldError(yearLevelSelect, 'Select your year.');
+                    isValid = false;
+                }
+                if (!details.gender) {
+                    setFieldError(genderSelect, 'Select your gender.');
                     isValid = false;
                 }
                 if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
@@ -2137,6 +2160,7 @@
                         idNumber: signupIdInput,
                         program: programSelect,
                         yearLevel: yearLevelSelect,
+                        gender: genderSelect,
                         password: signupPasswordInput
                     }, signupForm);
                 } finally {

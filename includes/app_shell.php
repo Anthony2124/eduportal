@@ -222,7 +222,7 @@ function app_page_start(array $user, string $page, string $title, array $search 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= e($root) ?>css/style.css">
-    <link rel="stylesheet" href="<?= e($root) ?>css/portal.css?v=6">
+    <link rel="stylesheet" href="<?= e($root) ?>css/portal.css?v=11">
     <?php app_shell_styles(); ?>
 </head>
 <body>
@@ -242,8 +242,26 @@ function app_page_end(array $scripts = []): void
         </main>
     </div>
 
+    <!-- Details dialog: filled by js/content.js when an item with data-detail is clicked -->
+    <div class="modal-overlay" id="detail-modal">
+        <div class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+            <div class="modal-header">
+                <div class="detail-heading">
+                    <div class="detail-kicker"><span class="detail-swatch" hidden></span><span data-detail-kicker></span></div>
+                    <h3 class="modal-title" id="detail-modal-title"></h3>
+                </div>
+                <button type="button" class="modal-close-btn" data-modal-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" data-detail-body></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-modal-close>Close</button>
+                <a class="btn btn-primary" data-detail-link hidden></a>
+            </div>
+        </div>
+    </div>
+
     <script src="<?= e(site_root()) ?>js/main.js?v=12"></script>
-    <script src="<?= e(site_root()) ?>js/content.js?v=4"></script>
+    <script src="<?= e(site_root()) ?>js/content.js?v=6"></script>
     <?php foreach ($scripts as $script): ?>
     <script src="<?= e(site_root() . $script) ?>"></script>
     <?php endforeach; ?>

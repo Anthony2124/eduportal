@@ -55,7 +55,8 @@ const CONTENT_TYPES = [
             'requirements' => ['label' => 'Requirements', 'type' => 'textarea', 'max' => 3000],
         ],
     ],
-    // A course offered to a block, with its days, time and room. Leave Faculty empty to let faculty pick it
+    // A course of a degree program offered to a block, with its days, time and room. The form asks for the
+    // program first ('ask_first'), then the rest. Leave Faculty empty to let faculty pick it
     // ("Teach this class" on the Courses page). The same course code can be offered to several blocks.
     'courses' => [
         'table' => 'courses',
@@ -64,8 +65,10 @@ const CONTENT_TYPES = [
         'manage' => ['admin'],
         'own_only' => [],
         'remove_note' => 'Its enrollments, assignments, exams and grades are removed too.',
-        'order' => 'a.code ASC, a.block ASC',
+        'order' => 'a.program IS NULL, a.program ASC, a.code ASC, a.block ASC',
         'fields' => [
+            'program' => ['label' => 'Program', 'type' => 'select', 'required' => true, 'options' => PROGRAMS,
+                'ask_first' => 'Which program is this course for?'],
             'code' => ['label' => 'Course code', 'type' => 'text', 'required' => true, 'max' => 20, 'upper' => true, 'unique_with' => 'block', 'placeholder' => 'e.g. CS 201'],
             'title' => ['label' => 'Course title', 'type' => 'text', 'required' => true, 'max' => 150],
             'units' => ['label' => 'Units', 'type' => 'number', 'required' => true, 'min' => 1, 'max' => 10],
@@ -434,7 +437,11 @@ function content_card_header(array $user, string $type, string $icon, string $ti
     <?php
 }
 
-/** The Add / Edit form (a dialog) for a type. Put it once on any page that has Add or Edit buttons for it. */
+/**
+ * The Add / Edit form (a dialog) for a type. Put it once on any page that has Add or Edit buttons for it.
+ * A select field marked 'ask_first' (at most one per type) is asked on its own first: its options are buttons,
+ * and picking one moves on to the other fields (js/content.js).
+ */
 function content_form(array $user, string $type): void
 {
     if (!can_manage_content($user, $type)) {
@@ -444,6 +451,7 @@ function content_form(array $user, string $type): void
     $types = array_column($def['fields'], 'type');
     $faculty = in_array('faculty', $types, true) ? faculty_options() : [];
     $courses = in_array('course', $types, true) ? managed_courses($user) : [];
+    $askFirst = array_key_first(array_filter($def['fields'], fn($field) => !empty($field['ask_first'])));
     ?>
             <div class="modal-overlay" id="content-modal-<?= e($type) ?>" data-content-modal="<?= e($type) ?>">
                 <div class="modal" role="dialog" aria-modal="true" aria-labelledby="content-modal-title-<?= e($type) ?>">
@@ -454,7 +462,35 @@ function content_form(array $user, string $type): void
                     <form class="content-form" novalidate>
                         <input type="hidden" name="id" value="">
                         <div class="modal-body">
+                            <?php if ($askFirst !== null):
+                                $field = $def['fields'][$askFirst];
+                            ?>
+                            <div data-form-step="choose">
+                                <input type="hidden" name="<?= e($askFirst) ?>">
+                                <p class="step-question" id="cf-<?= e($type) ?>-question"><?= e($field['ask_first']) ?></p>
+                                <div class="step-choices" role="group" aria-labelledby="cf-<?= e($type) ?>-question">
+                                    <?php foreach ($field['options'] as $option): ?>
+                                    <button type="button" class="step-choice" data-step-choice value="<?= e($option) ?>">
+                                        <i class="fa-solid fa-graduation-cap"></i>
+                                        <span><?= e($option) ?></span>
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <div data-form-step="details">
+                            <?php if ($askFirst !== null): ?>
+                            <div class="step-summary">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                <span><?= e($def['fields'][$askFirst]['label']) ?>: <strong data-step-chosen></strong></span>
+                                <button type="button" class="btn btn-outline btn-sm" data-step-back>Change</button>
+                            </div>
+                            <?php endif; ?>
                             <?php foreach ($def['fields'] as $name => $field):
+                                if ($name === $askFirst) {
+                                    continue;
+                                }
                                 $id = "cf-{$type}-{$name}";
                                 $req = !empty($field['required']);
                             ?>
@@ -504,6 +540,7 @@ function content_form(array $user, string $type): void
                                 <?php endif; ?>
                             </div>
                             <?php endforeach; ?>
+                            </div>
                             <div class="form-error" hidden></div>
                         </div>
                         <div class="modal-footer">
@@ -516,6 +553,53 @@ function content_form(array $user, string $type): void
     <?php
 }
 
+/* ---------------------------------------------------------------- details dialog (clickable items) */
+
+/**
+ * data-detail attribute: clicking the item opens the details dialog (js/content.js, dialog in app_page_end()).
+ * $detail: kicker, title, meta [[icon, text]], badges [[badge class, text]], sections [[heading, text]],
+ * link [href, label] or null, color (a swatch beside the title). Empty meta, badges and sections are left out.
+ */
+function detail_attr(array $detail): string
+{
+    // facts [[label, value]] (e.g. grades) are shown as they are
+    foreach (['meta' => 1, 'badges' => 1, 'sections' => 1] as $key => $textAt) {
+        $detail[$key] = array_values(array_filter($detail[$key] ?? [], fn($row) => trim((string) ($row[$textAt] ?? '')) !== ''));
+    }
+    return ' data-detail="' . e(json_encode($detail)) . '"';
+}
+
+/** The item's title as a button, so the details can be opened from the keyboard too. */
+function detail_button(string $text): string
+{
+    return '<button type="button" class="detail-trigger" data-detail-trigger>' . e($text) . '</button>';
+}
+
+/** [href, label] for the details dialog's "Open ..." link, if the user can open that page. */
+function detail_link(array $user, string $page, string $label): ?array
+{
+    return in_array($page, allowed_pages($user['role']), true) ? [site_root() . $page, $label] : null;
+}
+
+/** Details of a class: program, block, units, schedule, room, instructor, class size. */
+function course_detail(array $course, array $extra = []): array
+{
+    $units = (int) $course['units'];
+    return $extra + [
+        'kicker' => 'Course',
+        'title' => class_name($course) . ' - ' . $course['title'],
+        'meta' => [
+            ['fa-solid fa-graduation-cap', $course['program'] ?? ''],
+            ['fa-solid fa-users-rectangle', $course['block'] ? 'Block ' . $course['block'] : ''],
+            ['fa-solid fa-layer-group', $units . ($units === 1 ? ' unit' : ' units')],
+            ['fa-regular fa-clock', class_schedule($course) ?: 'Schedule to be announced'],
+            ['fa-solid fa-door-open', $course['room'] ? 'Room ' . $course['room'] : ''],
+            ['fa-solid fa-chalkboard-user', $course['person_name'] ? 'Instructor: ' . $course['person_name'] : 'No instructor yet'],
+            ['fa-solid fa-user-graduate', isset($course['enrolled']) ? $course['enrolled'] . ' enrolled' : ''],
+        ],
+    ];
+}
+
 /* ---------------------------------------------------------------- lists shown on the pages */
 
 function announcement_list(array $user, array $items, bool $compact = false): void
@@ -526,14 +610,22 @@ function announcement_list(array $user, array $items, bool $compact = false): vo
     }
     ?>
                 <div class="content-list<?= $compact ? ' compact' : '' ?>">
-                    <?php foreach ($items as $item): ?>
-                    <article class="content-item">
+                    <?php foreach ($items as $item):
+                        $posted = format_date($item['created_at'], 'M j, Y g:i A') . ($item['updated_at'] ? ' (edited)' : '');
+                    ?>
+                    <article class="content-item"<?= detail_attr([
+                        'kicker' => 'Announcement',
+                        'title' => $item['title'],
+                        'meta' => [['fa-regular fa-user', $item['person_name'] ?? 'Removed account'], ['fa-regular fa-clock', $posted]],
+                        'sections' => [['', $item['body']]],
+                        'link' => $compact ? detail_link($user, 'pages/communication/announcements.php', 'All announcements') : null,
+                    ]) ?>>
                         <div class="content-item-head">
                             <div>
-                                <h3 class="content-item-title"><?= e($item['title']) ?></h3>
+                                <h3 class="content-item-title"><?= detail_button($item['title']) ?></h3>
                                 <div class="content-meta">
                                     <span><i class="fa-regular fa-user"></i> <?= e($item['person_name'] ?? 'Removed account') ?></span>
-                                    <span><i class="fa-regular fa-clock"></i> <?= e(format_date($item['created_at'], 'M j, Y g:i A')) ?><?= $item['updated_at'] ? ' (edited)' : '' ?></span>
+                                    <span><i class="fa-regular fa-clock"></i> <?= e($posted) ?></span>
                                 </div>
                             </div>
                             <?php if (!$compact) content_actions($user, 'announcements', $item, $item['title']); ?>
@@ -554,7 +646,18 @@ function event_list(array $user, array $items, bool $compact = false, string $em
     ?>
                 <div class="content-list<?= $compact ? ' compact' : '' ?>">
                     <?php foreach ($items as $item): ?>
-                    <article class="content-item event-item">
+                    <article class="content-item event-item"<?= detail_attr([
+                        'kicker' => 'Event',
+                        'title' => $item['title'],
+                        'meta' => [
+                            ['fa-regular fa-calendar', format_date($item['event_date'], 'l, M j, Y')],
+                            ['fa-regular fa-clock', format_time_range($item['start_time'], $item['end_time'])],
+                            ['fa-solid fa-location-dot', $item['location'] ?? ''],
+                        ],
+                        'badges' => [$item['event_date'] < date('Y-m-d') ? ['badge-outline', 'This event has passed'] : ['', '']],
+                        'sections' => [['Details', $item['description'] ?? '']],
+                        'link' => $compact ? detail_link($user, 'pages/student-life/events.php', 'All events') : null,
+                    ]) ?>>
                         <div class="date-badge">
                             <span><?= e(format_date($item['event_date'], 'M')) ?></span>
                             <strong><?= e(format_date($item['event_date'], 'j')) ?></strong>
@@ -562,7 +665,7 @@ function event_list(array $user, array $items, bool $compact = false, string $em
                         <div class="content-item-main">
                             <div class="content-item-head">
                                 <div>
-                                    <h3 class="content-item-title"><?= e($item['title']) ?></h3>
+                                    <h3 class="content-item-title"><?= detail_button($item['title']) ?></h3>
                                     <div class="content-meta">
                                         <span><i class="fa-regular fa-calendar"></i> <?= e(format_date($item['event_date'], 'l, M j, Y')) ?></span>
                                         <span><i class="fa-regular fa-clock"></i> <?= e(format_time_range($item['start_time'], $item['end_time'])) ?></span>
@@ -595,10 +698,19 @@ function scholarship_list(array $user, array $items): void
                     <?php foreach ($items as $item):
                         $closed = $item['deadline'] && $item['deadline'] < $today;
                     ?>
-                    <article class="content-item">
+                    <article class="content-item"<?= detail_attr([
+                        'kicker' => 'Scholarship',
+                        'title' => $item['name'],
+                        'meta' => [['fa-solid fa-building-columns', $item['sponsor'] ?? '']],
+                        'badges' => [
+                            ['badge-success', $item['amount'] ?? ''],
+                            [$closed ? 'badge-danger' : 'badge-warning', $item['deadline'] ? ($closed ? 'Closed ' : 'Apply by ') . format_date($item['deadline']) : ''],
+                        ],
+                        'sections' => [['Requirements', $item['requirements'] ?? '']],
+                    ]) ?>>
                         <div class="content-item-head">
                             <div>
-                                <h3 class="content-item-title"><?= e($item['name']) ?></h3>
+                                <h3 class="content-item-title"><?= detail_button($item['name']) ?></h3>
                                 <div class="content-meta">
                                     <?php if ($item['sponsor']): ?>
                                     <span><i class="fa-solid fa-building-columns"></i> <?= e($item['sponsor']) ?></span>
@@ -679,9 +791,14 @@ function course_table(array $user, array $items, bool $showActions, string $empt
                             <tr><td colspan="<?= count($columns) + ($showActions ? 1 : 0) ?>"><?php app_empty('fa-book', $emptyTitle, $emptyText); ?></td></tr>
                             <?php endif; ?>
                             <?php foreach ($items as $item): ?>
-                            <tr>
-                                <td class="nowrap"><strong><?= e($item['code']) ?></strong></td>
-                                <td><?= e($item['title']) ?></td>
+                            <tr<?= detail_attr(course_detail($item)) ?>>
+                                <td class="nowrap"><strong><?= detail_button($item['code']) ?></strong></td>
+                                <td>
+                                    <?= e($item['title']) ?>
+                                    <?php if ($item['program']): ?>
+                                    <div class="cell-sub"><?= e($item['program']) ?></div>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="nowrap"><?= $orDash($item['block']) ?></td>
                                 <td><?= (int) $item['units'] ?></td>
                                 <td class="muted nowrap"><?= $orDash(class_schedule($item)) ?></td>
@@ -733,10 +850,20 @@ function assignment_list(array $user, array $items, bool $compact = false, strin
                         [$badgeClass, $badgeText] = due_badge($item['due_date']);
                         $due = format_date($item['due_date'], 'D, M j, Y') . ($item['due_time'] ? ' at ' . date('g:i A', strtotime($item['due_time'])) : '');
                     ?>
-                    <article class="content-item">
+                    <article class="content-item"<?= detail_attr([
+                        'kicker' => 'Assignment',
+                        'title' => $item['title'],
+                        'meta' => [
+                            ['fa-solid fa-book', class_name($item, 'course_') . ' - ' . $item['course_title']],
+                            ['fa-regular fa-calendar', 'Due ' . $due],
+                        ],
+                        'badges' => [[$badgeClass, $badgeText]],
+                        'sections' => [['Instructions', $item['instructions'] ?? '']],
+                        'link' => $compact ? detail_link($user, 'pages/academics/assignments.php', 'All assignments') : null,
+                    ]) ?>>
                         <div class="content-item-head">
                             <div>
-                                <h3 class="content-item-title"><?= e($item['title']) ?></h3>
+                                <h3 class="content-item-title"><?= detail_button($item['title']) ?></h3>
                                 <div class="content-meta">
                                     <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e(class_name($item, 'course_')) ?></span>
                                     <span><i class="fa-regular fa-calendar"></i> Due <?= e($due) ?></span>
@@ -764,7 +891,18 @@ function exam_list(array $user, array $items, bool $compact = false, string $emp
     ?>
                 <div class="content-list<?= $compact ? ' compact' : '' ?>">
                     <?php foreach ($items as $item): ?>
-                    <article class="content-item event-item">
+                    <article class="content-item event-item"<?= detail_attr([
+                        'kicker' => 'Exam',
+                        'title' => $item['title'],
+                        'meta' => [
+                            ['fa-solid fa-book', class_name($item, 'course_') . ' - ' . $item['course_title']],
+                            ['fa-regular fa-calendar', format_date($item['exam_date'], 'l, M j, Y')],
+                            ['fa-regular fa-clock', format_time_range($item['start_time'], $item['end_time'])],
+                            ['fa-solid fa-door-open', $item['room'] ? 'Room ' . $item['room'] : ''],
+                        ],
+                        'badges' => [['badge-primary', $item['exam_type']]],
+                        'link' => $compact ? detail_link($user, 'pages/academics/exams.php', 'All exams') : null,
+                    ]) ?>>
                         <div class="date-badge">
                             <span><?= e(format_date($item['exam_date'], 'M')) ?></span>
                             <strong><?= e(format_date($item['exam_date'], 'j')) ?></strong>
@@ -772,7 +910,7 @@ function exam_list(array $user, array $items, bool $compact = false, string $emp
                         <div class="content-item-main">
                             <div class="content-item-head">
                                 <div>
-                                    <h3 class="content-item-title"><?= e($item['title']) ?></h3>
+                                    <h3 class="content-item-title"><?= detail_button($item['title']) ?></h3>
                                     <div class="content-meta">
                                         <span class="badge badge-outline" title="<?= e($item['course_title']) ?>"><?= e(class_name($item, 'course_')) ?></span>
                                         <span class="badge badge-primary"><?= e($item['exam_type']) ?></span>

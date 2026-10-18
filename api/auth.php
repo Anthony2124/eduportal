@@ -19,16 +19,6 @@ const EDUPORTAL_API = true;
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/mailer.php';
 
-const PROGRAMS = [
-    'BS Computer Science',
-    'BS Information Technology',
-    'BS Information Systems',
-    'BS Computer Engineering',
-    'BS Business Administration',
-    'BS Accountancy',
-    'BS Psychology',
-];
-
 $input = read_json_request();
 
 match ($_GET['action'] ?? '') {
@@ -105,6 +95,7 @@ function action_register(array $input): never
         'id_number' => strtoupper(trim((string) ($input['idNumber'] ?? ''))),
         'program' => (string) ($input['program'] ?? ''),
         'year_level' => (int) ($input['yearLevel'] ?? 0),
+        'gender' => (string) ($input['gender'] ?? ''),
         'department' => null,
     ];
     $password = (string) ($input['password'] ?? '');
@@ -123,6 +114,9 @@ function action_register(array $input): never
     }
     if ($details['year_level'] < 1 || $details['year_level'] > 5) {
         fail('Select your year.', 422, ['field' => 'yearLevel']);
+    }
+    if (!isset(GENDERS[$details['gender']])) {
+        fail('Select your gender.', 422, ['field' => 'gender']);
     }
     if (!is_valid_password($password)) {
         fail('Use at least 8 characters with a letter and a number.', 422, ['field' => 'password']);
@@ -192,9 +186,11 @@ function action_login(array $input): never
             'faculty' => 'No faculty account found. Ask the admin to create one for you.',
             'admin' => 'No admin account found with that username.',
         ][$role];
+        log_activity(null, 'auth', 'Sign-in failed', "No account for \"{$identifier}\"");
         fail($notFound, 404, ['field' => 'identifier']);
     }
     if (!password_verify($password, $user['password_hash'])) {
+        log_activity($user, 'auth', 'Sign-in failed', 'Wrong password');
         fail('Incorrect password. Please try again.', 401, ['field' => 'password']);
     }
     require_role($user, $role);
@@ -339,13 +335,14 @@ function create_account(string $verifiedEmail): array
 
     try {
         db()->prepare(
-            'INSERT INTO users (role, id_number, first_name, last_name, program, year_level, department, email, google_sub, picture_url, password_hash)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO users (role, id_number, first_name, last_name, gender, program, year_level, department, email, google_sub, picture_url, password_hash)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             $pending['role'],
             $pending['id_number'],
             $pending['first_name'],
             $pending['last_name'],
+            $pending['gender'] ?? null,
             $pending['program'],
             $pending['year_level'],
             $pending['department'],
@@ -362,7 +359,9 @@ function create_account(string $verifiedEmail): array
     }
 
     unset($_SESSION['pending_signup']);
-    return find_user_by_id((int) db()->lastInsertId());
+    $user = find_user_by_id((int) db()->lastInsertId());
+    log_activity($user, 'account', 'Created a student account', $user['program'] . ', ' . $user['id_number']);
+    return $user;
 }
 
 /** Asks Google to check the ID token from the "Continue with Google" button. */

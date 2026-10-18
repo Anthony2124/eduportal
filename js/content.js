@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const add = e.target.closest('[data-content-add]');
     const edit = e.target.closest('[data-content-edit]');
     const remove = e.target.closest('[data-content-delete]');
-    if (add) openContentForm(add.dataset.contentAdd, null);
+    if (add) openContentForm(add.dataset.contentAdd, null, add.dataset.preset ? JSON.parse(add.dataset.preset) : null);
     if (edit) openContentForm(edit.dataset.contentEdit, JSON.parse(edit.dataset.item));
     if (remove) removeContent(remove.dataset.contentDelete, remove.dataset.id, remove.dataset.name, remove.dataset.note);
 
@@ -27,7 +27,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const drop = e.target.closest('[data-class-drop]');
     if (teach) teachClass(teach.dataset);
     if (drop) dropClass(drop.dataset);
+
+    // Details dialog: clicking anywhere on an item (or its title button) shows everything about it. Other buttons
+    // and links in the item (Edit, Remove, Teach) keep doing their own thing, and selecting text doesn't open it.
+    const detailItem = e.target.closest('[data-detail]');
+    const control = e.target.closest('a, button, input, select, textarea, label');
+    if (detailItem && (!control || control.matches('[data-detail-trigger]')) && !String(window.getSelection())) {
+      openDetail(JSON.parse(detailItem.dataset.detail), control || detailItem);
+    }
   });
+
+  // The details dialog also closes with Escape; focus goes back to what opened it
+  const detailModal = document.getElementById('detail-modal');
+  if (detailModal) {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && detailModal.classList.contains('active')) {
+        detailModal.classList.remove('active');
+        document.body.style.overflow = '';
+        returnDetailFocus();
+      }
+    });
+    detailModal.addEventListener('click', (e) => {
+      if (e.target === detailModal || e.target.closest('[data-modal-close]')) returnDetailFocus();
+    });
+  }
+
+  initScheduleChart();
 
   document.querySelectorAll('[data-content-modal]').forEach(modal => {
     const form = modal.querySelector('form');
@@ -38,6 +63,15 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('input', (e) => {
       e.target.classList.remove('is-invalid');
       e.target.closest('.day-picker')?.classList.remove('is-invalid');
+    });
+    // Forms that ask one thing first (course form: which program): picking an answer moves on, "Change" goes back
+    form.addEventListener('click', (e) => {
+      const choice = e.target.closest('[data-step-choice]');
+      if (choice) {
+        choice.closest('[data-form-step]').querySelector('input[type=hidden]').value = choice.value;
+        showFormStep(form, false);
+      }
+      if (e.target.closest('[data-step-back]')) showFormStep(form, true);
     });
   });
 
@@ -72,8 +106,8 @@ async function contentApi(action, type, payload) {
   return data;
 }
 
-// Opens the Add form (item = null) or the Edit form filled with the item's current values
-function openContentForm(type, item) {
+// Opens the Add form (item = null, optionally with preset values) or the Edit form filled with the item's current values
+function openContentForm(type, item, preset = null) {
   const modal = document.getElementById(`content-modal-${type}`);
   if (!modal) return;
   const form = modal.querySelector('form');
@@ -82,9 +116,11 @@ function openContentForm(type, item) {
   form.reset();
   form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
   form.querySelector('.form-error').hidden = true;
+  // reset() leaves hidden inputs as they were
+  form.querySelectorAll('input[type=hidden]').forEach(input => { input.value = ''; });
   form.elements.id.value = item ? item.id : '';
-  if (item) {
-    for (const [name, value] of Object.entries(item)) {
+  if (item || preset) {
+    for (const [name, value] of Object.entries(item || preset)) {
       if (name === 'id' || !form.elements[name]) continue;
       const boxes = form.querySelectorAll(`input[type=checkbox][name="${name}"]`);
       if (boxes.length) {
@@ -100,7 +136,28 @@ function openContentForm(type, item) {
 
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
-  form.querySelector('input:not([type=hidden]), textarea, select').focus();
+  showFormStep(form);
+}
+
+// A form that asks one thing first shows only that question until it has an answer (choosing = undefined: decide
+// from the answer), then the other fields under a "Program: ... Change" line. Focuses the first box of what's shown.
+function showFormStep(form, choosing) {
+  const choose = form.querySelector('[data-form-step="choose"]');
+  if (choose) {
+    const answer = choose.querySelector('input[type=hidden]').value;
+    choosing ??= answer === '';
+    choose.hidden = !choosing;
+    form.querySelector('[data-form-step="details"]').hidden = choosing;
+    form.querySelector('[type=submit]').hidden = choosing;
+    form.querySelector('[data-step-chosen]').textContent = answer;
+    choose.querySelectorAll('[data-step-choice]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.value === answer));
+    });
+  }
+  const step = form.querySelector('[data-form-step]:not([hidden])');
+  const first = step.querySelector('[data-step-choice][aria-pressed="true"]')
+    || step.querySelector('input:not([type=hidden]), textarea, select, [data-step-choice]');
+  first?.focus();
 }
 
 async function saveContent(type, form) {
@@ -125,7 +182,9 @@ async function saveContent(type, form) {
     errorBox.hidden = false;
     let field = err.field && form.elements[err.field];
     if (field instanceof RadioNodeList) field = field[0]; // checkbox group: highlight the group, focus its first box
-    if (field) {
+    if (field?.closest('[data-form-step="choose"]')) {
+      showFormStep(form, true); // the question asked first (e.g. no program picked): back to it
+    } else if (field) {
       (field.closest('.day-picker') || field).classList.add('is-invalid');
       field.focus();
     }
@@ -255,4 +314,119 @@ async function clearGrade(data) {
   } catch (err) {
     showToast(err.message, 'danger');
   }
+}
+
+/* ---------------------------------------------------------------- details dialog (includes/content.php detail_attr) */
+
+let detailOpener = null;
+
+function detailEl(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// detail: { kicker, title, color, meta: [[icon, text]], badges: [[class, text]], facts: [[label, value]],
+//           sections: [[heading, text]], link: [href, label] | null }. Everything goes in as text, never HTML.
+function openDetail(detail, opener) {
+  const modal = document.getElementById('detail-modal');
+  if (!modal) return;
+  detailOpener = opener;
+
+  modal.querySelector('[data-detail-kicker]').textContent = detail.kicker || '';
+  modal.querySelector('.modal-title').textContent = detail.title;
+  const swatch = modal.querySelector('.detail-swatch');
+  swatch.hidden = !detail.color;
+  swatch.style.background = detail.color || '';
+
+  const parts = [];
+  if (detail.badges?.length) {
+    const row = detailEl('div', 'detail-badges');
+    detail.badges.forEach(([cls, text]) => row.appendChild(detailEl('span', `badge ${cls}`, text)));
+    parts.push(row);
+  }
+  if (detail.meta?.length) {
+    const list = detailEl('ul', 'detail-meta');
+    detail.meta.forEach(([icon, text]) => {
+      const row = detailEl('li');
+      row.append(detailEl('i', icon), detailEl('span', '', text));
+      list.appendChild(row);
+    });
+    parts.push(list);
+  }
+  if (detail.facts?.length) {
+    const grid = detailEl('dl', 'detail-facts');
+    detail.facts.forEach(([label, value]) => {
+      const fact = detailEl('div', 'detail-fact');
+      fact.append(detailEl('dt', '', label), detailEl('dd', '', value));
+      grid.appendChild(fact);
+    });
+    parts.push(grid);
+  }
+  (detail.sections || []).forEach(([heading, text]) => {
+    const section = detailEl('section', 'detail-section');
+    if (heading) section.appendChild(detailEl('h4', '', heading));
+    section.appendChild(detailEl('p', 'detail-text', text));
+    parts.push(section);
+  });
+  modal.querySelector('[data-detail-body]').replaceChildren(...parts);
+
+  const link = modal.querySelector('[data-detail-link]');
+  link.hidden = !detail.link;
+  if (detail.link) {
+    link.href = detail.link[0];
+    link.replaceChildren(document.createTextNode(`${detail.link[1]} `), detailEl('i', 'fa-solid fa-arrow-right'));
+  }
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  modal.querySelector('.modal-close-btn').focus();
+}
+
+function returnDetailFocus() {
+  if (detailOpener && document.contains(detailOpener)) {
+    (detailOpener.matches('[data-detail-trigger]') ? detailOpener : detailOpener.querySelector('[data-detail-trigger]'))?.focus();
+  }
+  detailOpener = null;
+}
+
+/* ---------------------------------------------------------------- weekly schedule chart (schedule_chart()) */
+
+// A bar's subject code is shown inside it only when it fits; otherwise the legend, the hover card and the
+// class table below carry it. Hovering or focusing a bar shows its class, time and room.
+function initScheduleChart() {
+  const chart = document.querySelector('.sched-chart');
+  if (!chart) return;
+
+  const fitLabels = () => chart.querySelectorAll('.sched-bar').forEach(bar => {
+    // 6px of padding on each side; a hidden label (visibility) still has its width
+    bar.classList.toggle('no-label', bar.querySelector('.sched-bar-label').offsetWidth > bar.clientWidth - 12);
+  });
+  fitLabels();
+  new ResizeObserver(fitLabels).observe(chart);
+
+  const tip = detailEl('div', 'sched-tooltip');
+  tip.setAttribute('role', 'tooltip');
+  tip.hidden = true;
+  chart.appendChild(tip);
+
+  const show = (bar) => {
+    const [time, name, room] = JSON.parse(bar.dataset.tip);
+    tip.replaceChildren(detailEl('strong', '', time), detailEl('span', '', name), ...(room ? [detailEl('span', 'muted', room)] : []));
+    tip.hidden = false;
+    const box = chart.getBoundingClientRect();
+    const rect = bar.getBoundingClientRect();
+    const left = Math.min(Math.max(rect.left - box.left, 0), box.width - tip.offsetWidth);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${rect.top - box.top - tip.offsetHeight - 6}px`;
+  };
+  const hide = () => { tip.hidden = true; };
+  chart.querySelectorAll('.sched-bar').forEach(bar => {
+    bar.addEventListener('pointerenter', () => show(bar));
+    bar.addEventListener('focus', () => show(bar));
+    bar.addEventListener('pointerleave', hide);
+    bar.addEventListener('blur', hide);
+  });
+  chart.querySelector('.sched-scroll').addEventListener('scroll', hide);
 }

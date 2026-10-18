@@ -35,8 +35,8 @@ if ($user['role'] === 'student') {
                                 $rating = final_rating($course);
                                 [$badge, $remark] = grade_remarks($rating);
                             ?>
-                            <tr>
-                                <td class="nowrap"><strong><?= e(class_name($course)) ?></strong></td>
+                            <tr<?= detail_attr(grade_detail($user, $course, false)) ?>>
+                                <td class="nowrap"><strong><?= detail_button(class_name($course)) ?></strong></td>
                                 <td><?= e($course['title']) ?></td>
                                 <td><?= (int) $course['units'] ?></td>
                                 <td><?= e(format_grade($course['prelim'])) ?></td>

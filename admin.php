@@ -25,6 +25,9 @@ $contentLinks = [
     ['pages/admin/scholarships.php', 'fa-graduation-cap', 'Scholarships', $contentCount('scholarships')],
 ];
 
+// The latest lines of the activity log (Activity Logs page has them all)
+$recentActivity = db()->query('SELECT * FROM activity_logs ORDER BY id DESC LIMIT 6')->fetchAll();
+
 $roleBadges = ['student' => 'badge-primary', 'faculty' => 'badge-success', 'admin' => 'badge-warning'];
 $roleIcons = ['student' => 'fa-user-graduate', 'faculty' => 'fa-chalkboard-user', 'admin' => 'fa-user-shield'];
 
@@ -145,6 +148,7 @@ app_page_start($user, 'admin.php', 'Admin Dashboard', ['id' => 'page-search', 'p
                 <section class="card">
                     <div class="card-header">
                         <div class="card-title"><i class="fa-solid fa-chart-simple" style="color: var(--primary);"></i> Students by Program</div>
+                        <a href="pages/smart/analytics.php" class="card-link">Analytics</a>
                     </div>
                     <div class="card-body">
                         <?php if ($studentsByProgram): ?>
@@ -162,6 +166,25 @@ app_page_start($user, 'admin.php', 'Admin Dashboard', ['id' => 'page-search', 'p
                     </div>
                 </section>
             </div>
+
+            <section class="card section-gap">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-clipboard-list" style="color: var(--primary);"></i> Recent Activity</div>
+                    <a href="pages/admin/logs.php" class="card-link">View all</a>
+                </div>
+                <?php if (!$recentActivity): ?>
+                <?php app_empty('fa-clipboard-list', 'No activity yet', 'Sign-ins and changes in the portal will be listed here.'); ?>
+                <?php else: ?>
+                <ul class="activity-feed">
+                    <?php foreach ($recentActivity as $log): ?>
+                    <li<?= $log['action'] === 'Sign-in failed' ? ' class="log-failed"' : '' ?>>
+                        <span class="activity-time"><?= e(format_date($log['created_at'], 'M j, g:i A')) ?></span>
+                        <span><strong><?= e($log['user_name'] ?? 'Unknown') ?></strong> <?= e(lcfirst($log['action'])) ?><?= $log['details'] !== '' ? ': ' . e($log['details']) : '' ?></span>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php endif; ?>
+            </section>
 
             <section class="card section-gap" id="accounts">
                 <div class="card-header">

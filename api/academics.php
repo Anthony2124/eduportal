@@ -5,7 +5,7 @@
  *
  *   POST api/academics.php?action=teach         { course_id }   faculty: become the instructor of an open class
  *   POST api/academics.php?action=drop_class    { course_id }   faculty: stop teaching a class (it becomes open again)
- *   POST api/academics.php?action=enroll        { course_id, student_id }
+ *   POST api/academics.php?action=enroll        { course_id, student_id }   a student of the course's program
  *   POST api/academics.php?action=unenroll      { course_id, student_id }   also removes that student's grade
  *   POST api/academics.php?action=save_grade    { course_id, student_id, prelim, midterm, final }   1.00 - 5.00, any may be empty
  *   POST api/academics.php?action=clear_grade   { course_id, student_id }
@@ -43,9 +43,9 @@ if (in_array($action, ['save_grade', 'clear_grade'], true) && $user['role'] !== 
 
 match ($action) {
     'enroll' => enroll($user, $courseId, $studentId),
-    'unenroll' => unenroll($courseId, $studentId),
+    'unenroll' => unenroll($user, $courseId, $studentId),
     'save_grade' => save_grade($user, $courseId, $studentId, $input),
-    'clear_grade' => clear_grade($courseId, $studentId),
+    'clear_grade' => clear_grade($user, $courseId, $studentId),
     default => fail('Unknown action.', 404),
 };
 
@@ -70,6 +70,7 @@ function teach_class(array $user, int $courseId): never
     if (!$stmt->rowCount()) {
         fail('Another instructor already took this class.', 409);
     }
+    log_activity($user, 'academics', 'Took a class', log_names($courseId));
     json_response(['ok' => true]);
 }
 
@@ -81,7 +82,23 @@ function drop_class(array $user, int $courseId): never
     if (!$stmt->rowCount()) {
         fail("You don't teach this class.", 403);
     }
+    log_activity($user, 'academics', 'Dropped a class', log_names($courseId));
     json_response(['ok' => true]);
+}
+
+/** "IT 101 (BSIT 2-A) - Title" for the activity log, or with a student "Juan Dela Cruz in IT 101 (BSIT 2-A)". */
+function log_names(int $courseId, int $studentId = 0): string
+{
+    $stmt = db()->prepare('SELECT code, block, title FROM courses WHERE id = ?');
+    $stmt->execute([$courseId]);
+    $course = $stmt->fetch();
+    $class = $course ? class_name($course) : "class #{$courseId}";
+    if (!$studentId) {
+        return $course ? $class . ' - ' . $course['title'] : $class;
+    }
+    $stmt = db()->prepare("SELECT CONCAT(first_name, ' ', last_name) FROM users WHERE id = ?");
+    $stmt->execute([$studentId]);
+    return ($stmt->fetchColumn() ?: "student #{$studentId}") . ' in ' . $class;
 }
 
 function is_enrolled(int $courseId, int $studentId): bool
@@ -93,10 +110,18 @@ function is_enrolled(int $courseId, int $studentId): bool
 
 function enroll(array $user, int $courseId, int $studentId): never
 {
-    $stmt = db()->prepare("SELECT 1 FROM users WHERE id = ? AND role = 'student'");
-    $stmt->execute([$studentId]);
-    if (!$stmt->fetchColumn()) {
+    // only students of the course's program (any student for a course that has no program yet)
+    $stmt = db()->prepare(
+        "SELECT u.program AS student_program, c.program FROM users u JOIN courses c ON c.id = ?
+         WHERE u.id = ? AND u.role = 'student'"
+    );
+    $stmt->execute([$courseId, $studentId]);
+    $found = $stmt->fetch();
+    if (!$found) {
         fail('Choose a student from the list.', 422, ['field' => 'student_id']);
+    }
+    if ($found['program'] !== null && $found['student_program'] !== $found['program']) {
+        fail("Only {$found['program']} students can be enrolled in this course.", 422, ['field' => 'student_id']);
     }
     if (is_enrolled($courseId, $studentId)) {
         fail('That student is already in this course.', 409, ['field' => 'student_id']);
@@ -104,10 +129,11 @@ function enroll(array $user, int $courseId, int $studentId): never
     db()->prepare('INSERT INTO enrollments (course_id, student_id, enrolled_by) VALUES (?, ?, ?)')
         ->execute([$courseId, $studentId, $user['id']]);
     add_chat_notice($courseId, $studentId, 'added'); // enrolled students are in the class group chat
+    log_activity($user, 'academics', 'Enrolled a student', log_names($courseId, $studentId));
     json_response(['ok' => true]);
 }
 
-function unenroll(int $courseId, int $studentId): never
+function unenroll(array $user, int $courseId, int $studentId): never
 {
     if (!is_enrolled($courseId, $studentId)) {
         fail('That student is not in this course.', 404);
@@ -115,6 +141,7 @@ function unenroll(int $courseId, int $studentId): never
     db()->prepare('DELETE FROM grades WHERE course_id = ? AND student_id = ?')->execute([$courseId, $studentId]);
     db()->prepare('DELETE FROM enrollments WHERE course_id = ? AND student_id = ?')->execute([$courseId, $studentId]);
     add_chat_notice($courseId, $studentId, 'removed');
+    log_activity($user, 'academics', 'Removed a student from a class', log_names($courseId, $studentId));
     json_response(['ok' => true]);
 }
 
@@ -146,11 +173,14 @@ function save_grade(array $user, int $courseId, int $studentId, array $input): n
         'INSERT INTO grades (course_id, student_id, prelim, midterm, final, graded_by) VALUES (?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE prelim = VALUES(prelim), midterm = VALUES(midterm), final = VALUES(final), graded_by = VALUES(graded_by)'
     )->execute([$courseId, $studentId, $prelim, $midterm, $final, $user['id']]);
+    log_activity($user, 'academics', 'Saved grades', log_names($courseId, $studentId)
+        . ' (prelim ' . ($prelim ?? '-') . ', midterm ' . ($midterm ?? '-') . ', final ' . ($final ?? '-') . ')');
     json_response(['ok' => true]);
 }
 
-function clear_grade(int $courseId, int $studentId): never
+function clear_grade(array $user, int $courseId, int $studentId): never
 {
     db()->prepare('DELETE FROM grades WHERE course_id = ? AND student_id = ?')->execute([$courseId, $studentId]);
+    log_activity($user, 'academics', 'Cleared grades', log_names($courseId, $studentId));
     json_response(['ok' => true]);
 }

@@ -98,6 +98,7 @@ const PAGE_SECTIONS = [
     'Administrative' => [
         'pages/admin/enrollment.php' => ['fa-user-plus', 'Enrollment'],
         'pages/admin/scholarships.php' => ['fa-graduation-cap', 'Scholarships'],
+        'pages/admin/logs.php' => ['fa-clipboard-list', 'Activity Logs'],
     ],
     'Communication' => [
         'pages/communication/messaging.php' => ['fa-envelope', 'Messages'],
@@ -105,7 +106,6 @@ const PAGE_SECTIONS = [
     ],
     'Student Life' => [
         'pages/student-life/events.php' => ['fa-calendar', 'Events'],
-        'pages/student-life/clubs.php' => ['fa-users', 'Clubs'],
     ],
     'Smart Features' => [
         'pages/smart/analytics.php' => ['fa-chart-line', 'Analytics'],
@@ -127,7 +127,7 @@ const ROLE_PAGES = [
         'pages/communication/messaging.php',
         'pages/communication/announcements.php',
         'pages/student-life/events.php',
-        'pages/student-life/clubs.php',
+        'pages/admin/logs.php',
         'pages/smart/analytics.php',
         'pages/settings/profile.php',
     ],
@@ -154,7 +154,6 @@ const ROLE_PAGES = [
         'pages/communication/messaging.php',
         'pages/communication/announcements.php',
         'pages/student-life/events.php',
-        'pages/student-life/clubs.php',
         'pages/settings/profile.php',
     ],
 ];
@@ -174,6 +173,53 @@ const DEPARTMENTS = [
     'College of Engineering',
     'College of Education',
 ];
+
+// Degree programs (courses) students sign up for; every class on the Courses page belongs to one
+const PROGRAMS = [
+    'BS Computer Science',
+    'BS Information Technology',
+    'BS Information Systems',
+    'BS Computer Engineering',
+    'BS Business Administration',
+    'BS Accountancy',
+    'BS Psychology',
+];
+
+// Students' gender (users.gender), asked at sign-up; NULL = never answered (accounts from before it was asked)
+const GENDERS = ['male' => 'Male', 'female' => 'Female', 'unspecified' => 'Prefer not to say'];
+
+// Kinds of things the activity log records (Activity Logs page)
+const LOG_CATEGORIES = [
+    'auth' => 'Sign-ins',
+    'account' => 'Accounts',
+    'content' => 'Posts & courses',
+    'academics' => 'Enrollment & grades',
+];
+
+/**
+ * Adds a line to the activity log: who did what, e.g.
+ *   log_activity($user, 'content', 'Added course', 'IT 101 (BSIT 2-A) - Introduction to Computing');
+ * $user is whoever did it (null when unknown, e.g. a sign-in with an ID that has no account).
+ * A failure to log never stops the action itself; it only goes to the PHP error log.
+ */
+function log_activity(?array $user, string $category, string $action, string $details = ''): void
+{
+    try {
+        db()->prepare(
+            'INSERT INTO activity_logs (user_id, user_name, role, category, action, details, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            $user['id'] ?? null,
+            $user ? $user['first_name'] . ' ' . $user['last_name'] : null,
+            $user['role'] ?? null,
+            $category,
+            $action,
+            mb_strimwidth($details, 0, 255, '…'),
+            $_SERVER['REMOTE_ADDR'] ?? null,
+        ]);
+    } catch (PDOException $e) {
+        error_log('[EduPortal] Could not write to the activity log: ' . $e->getMessage());
+    }
+}
 
 /** Password rule for every account: at least 8 characters with a letter and a number. */
 function is_valid_password(string $password): bool
@@ -269,6 +315,7 @@ function start_user_session(array $user, bool $remember): void
     }
 
     db()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([$user['id']]);
+    log_activity($user, 'auth', 'Signed in');
 }
 
 function end_user_session(): void

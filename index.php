@@ -64,7 +64,7 @@ app_stats([
                 <div>
                     <section class="card section-gap">
                         <?php $cardHeader('fa-calendar-day', 'My Classes', 'pages/academics/schedule.php'); ?>
-                        <?php class_list($myCourses); ?>
+                        <?php class_list($user, $myCourses); ?>
                     </section>
 
                     <section class="card section-gap">
@@ -85,8 +85,8 @@ app_stats([
                                         $rating = final_rating($course);
                                         [$badge, $remark] = grade_remarks($rating);
                                     ?>
-                                    <tr>
-                                        <td><strong><?= e(class_name($course)) ?></strong> <span class="muted"><?= e($course['title']) ?></span></td>
+                                    <tr<?= detail_attr(grade_detail($user, $course, true)) ?>>
+                                        <td><strong><?= detail_button(class_name($course)) ?></strong> <span class="muted"><?= e($course['title']) ?></span></td>
                                         <td><?= e(format_grade($course['prelim'])) ?></td>
                                         <td><?= e(format_grade($course['midterm'])) ?></td>
                                         <td><?= e(format_grade($course['final'])) ?></td>

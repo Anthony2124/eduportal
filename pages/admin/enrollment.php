@@ -1,35 +1,58 @@
 <?php
-// Enrollment (Admin and Faculty): add or remove students in a course. Faculty only see the courses they teach.
+// Enrollment (Admin and Faculty): add or remove students in a course. Faculty only see the courses they teach;
+// the Admin can narrow the courses to one program. Only students of the course's program can be enrolled.
 require __DIR__ . '/../../includes/app_shell.php';
 require __DIR__ . '/../../includes/academics.php';
 $page = 'pages/admin/enrollment.php';
 $user = require_page_access($page);
 
 $courses = managed_courses($user);
+$program = null; // the admin's Program filter ('' = all programs); faculty don't get one
+if ($user['role'] === 'admin') {
+    $program = in_array($_GET['program'] ?? '', PROGRAMS, true) ? $_GET['program'] : '';
+    if ($program !== '') {
+        $courses = array_values(array_filter($courses, fn($c) => $c['program'] === $program));
+    }
+}
 $course = pick_course($courses);
 $roster = $course ? course_roster((int) $course['id']) : [];
-$available = $course ? students_not_in((int) $course['id']) : [];
+$available = $course ? students_not_in($course) : [];
 $yearNames = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
 
 app_page_start($user, $page, 'Enrollment');
 app_page_header('Enrollment', 'Add or remove students in a course. Enrolled students are added to the class group chat automatically.');
 
-if (!$course) {
+if (!$course && !$program) {
     if ($user['role'] === 'faculty') {
         app_empty_card('fa-book', 'Your Courses', 'fa-book', 'No classes yet', 'Pick the classes you teach on the Courses page.');
     } else {
         app_empty_card('fa-book', 'Courses', 'fa-book', 'No courses yet', 'Add courses on the Courses page first.');
     }
+} elseif (!$course) {
+?>
+            <section class="card section-gap">
+                <div class="card-header card-header-wrap">
+                    <div>
+                        <div class="card-title"><i class="fa-solid fa-users" style="color: var(--primary);"></i> <?= e($program) ?></div>
+                    </div>
+                    <div class="card-tools">
+                        <?php course_picker($courses, null, $program); ?>
+                    </div>
+                </div>
+                <?php app_empty('fa-book', 'No courses yet', "Add {$program} courses on the Courses page first."); ?>
+            </section>
+<?php
 } else {
+    $details = array_filter([$course['title'], $course['program'], count($roster) . ' enrolled', class_schedule($course)]);
 ?>
             <section class="card section-gap">
                 <div class="card-header card-header-wrap">
                     <div>
                         <div class="card-title"><i class="fa-solid fa-users" style="color: var(--primary);"></i> Students in <?= e(class_name($course)) ?></div>
-                        <div class="card-subtitle"><?= e($course['title']) ?> • <?= count($roster) ?> enrolled<?= class_schedule($course) !== '' ? ' • ' . e(class_schedule($course)) : '' ?></div>
+                        <div class="card-subtitle"><?= e(implode(' • ', $details)) ?></div>
                     </div>
                     <div class="card-tools">
-                        <?php course_picker($courses, $course); ?>
+                        <?php course_picker($courses, $course, $program); ?>
                         <button type="button" class="btn btn-primary btn-sm" data-enroll-add="<?= (int) $course['id'] ?>">
                             <i class="fa-solid fa-user-plus"></i> Enroll student
                         </button>
@@ -87,8 +110,12 @@ if (!$course) {
                                     <option value="<?= (int) $student['id'] ?>"><?= e($student['last_name'] . ', ' . $student['first_name'] . ' (' . $student['id_number'] . ') - ' . $student['program']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <?php if (!$available): ?>
-                                <div class="field-note">Every student account is already in this course (or no students have signed up yet).</div>
+                                <?php if ($course['program'] === null): ?>
+                                <div class="field-note">This course has no program yet, so every student is listed. Set its program on the Courses page.</div>
+                                <?php elseif (!$available): ?>
+                                <div class="field-note">Every <?= e($course['program']) ?> student is already in this course (or none have signed up yet).</div>
+                                <?php else: ?>
+                                <div class="field-note">Only <?= e($course['program']) ?> students are listed.</div>
                                 <?php endif; ?>
                             </div>
                             <div class="form-error" hidden></div>

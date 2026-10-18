@@ -51,8 +51,42 @@ app_page_header('Account Settings', 'Your account details');
                             <dd><?= e($value) ?></dd>
                         </div>
                         <?php endforeach; ?>
+                        <?php if ($role === 'student'): ?>
+                        <div>
+                            <dt><label for="gender">Gender</label></dt>
+                            <dd>
+                                <form class="gender-form" id="gender-form" novalidate>
+                                    <select class="form-select" id="gender" name="gender">
+                                        <option value=""<?= $user['gender'] === null ? ' selected' : '' ?> disabled>Not set</option>
+                                        <?php foreach (GENDERS as $value => $label): ?>
+                                        <option value="<?= e($value) ?>"<?= $user['gender'] === $value ? ' selected' : '' ?>><?= e($label) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                                </form>
+                            </dd>
+                        </div>
+                        <?php endif; ?>
                     </dl>
                 </div>
             </section>
+
+            <?php if ($role === 'student'): ?>
+            <script>
+                // Gender is the one detail students change themselves (it's used for the school's student statistics)
+                document.getElementById('gender-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const select = e.target.elements.gender;
+                    if (!select.value) return showToast('Select your gender first.', 'danger');
+                    const response = await fetch(new URL('api/profile.php?action=gender', SITE_ROOT), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ gender: select.value })
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    showToast(response.ok ? 'Gender saved.' : (data.error || `Server error (${response.status}).`), response.ok ? 'success' : 'danger');
+                });
+            </script>
+            <?php endif; ?>
 <?php
 app_page_end();

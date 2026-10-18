@@ -8,6 +8,15 @@ require_once __DIR__ . '/content.php';
 
 const LOWEST_PASSING_GRADE = 3.00;
 
+// Schedule chart: [bar color, label color] per subject, given out in this order. It's a categorical palette
+// checked to stay tell-apart-able for colorblind viewers when neighbors touch; don't add colors or reorder.
+// From the 9th subject on, bars share the neutral gray (their labels, the legend and the table still tell them apart).
+const SCHEDULE_COLORS = [
+    ['#2a78d6', '#ffffff'], ['#eb6834', '#0b0b0b'], ['#1baf7a', '#0b0b0b'], ['#eda100', '#0b0b0b'],
+    ['#e87ba4', '#0b0b0b'], ['#008300', '#ffffff'], ['#4a3aa7', '#ffffff'], ['#e34948', '#0b0b0b'],
+];
+const SCHEDULE_OTHER_COLOR = ['#64748b', '#ffffff'];
+
 /** Students enrolled in a course, with their grades. */
 function course_roster(int $courseId): array
 {
@@ -24,15 +33,19 @@ function course_roster(int $courseId): array
     return $stmt->fetchAll();
 }
 
-/** Students who are not in the course yet (for the Enroll dropdown). */
-function students_not_in(int $courseId): array
+/**
+ * Students who are not in the course yet (for the Enroll dropdown): those in the course's program, or every
+ * student for a course from before courses had a program.
+ */
+function students_not_in(array $course): array
 {
     $stmt = db()->prepare(
         "SELECT id, id_number, first_name, last_name, program FROM users
          WHERE role = 'student' AND id NOT IN (SELECT student_id FROM enrollments WHERE course_id = ?)
+           AND (? IS NULL OR program = ?)
          ORDER BY last_name, first_name"
     );
-    $stmt->execute([$courseId]);
+    $stmt->execute([$course['id'], $course['program'], $course['program']]);
     return $stmt->fetchAll();
 }
 
@@ -121,11 +134,21 @@ function pick_course(array $courses): ?array
     return $courses[0] ?? null;
 }
 
-/** Dropdown that switches the page to another course. */
-function course_picker(array $courses, ?array $selected): void
+/** Dropdown that switches the page to another course; given a $program ('' = all), a Program dropdown before it. */
+function course_picker(array $courses, ?array $selected, ?string $program = null): void
 {
     ?>
                     <form method="get" class="course-picker">
+                        <?php if ($program !== null): ?>
+                        <label for="program-picker">Program</label>
+                        <select class="form-select" id="program-picker" name="program" onchange="this.form.submit()">
+                            <option value="">All programs</option>
+                            <?php foreach (PROGRAMS as $option): ?>
+                            <option<?= $option === $program ? ' selected' : '' ?>><?= e($option) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php endif; ?>
+                        <?php if ($courses): ?>
                         <label for="course-picker">Course</label>
                         <select class="form-select" id="course-picker" name="course" onchange="this.form.submit()">
                             <?php foreach ($courses as $course): ?>
@@ -134,6 +157,7 @@ function course_picker(array $courses, ?array $selected): void
                             </option>
                             <?php endforeach; ?>
                         </select>
+                        <?php endif; ?>
                         <noscript><button class="btn btn-outline btn-sm">Show</button></noscript>
                     </form>
     <?php
@@ -159,8 +183,26 @@ function person_cell(array $person): void
     <?php
 }
 
+/** Details of a student's course with its grades, for the details dialog (Grades page, dashboard). */
+function grade_detail(array $user, array $course, bool $withLink): array
+{
+    $rating = final_rating($course);
+    [$badge, $remark] = grade_remarks($rating);
+    return course_detail($course, [
+        'kicker' => 'Grades',
+        'badges' => [[$badge, $remark]],
+        'facts' => [
+            ['Prelim', format_grade($course['prelim'])],
+            ['Midterm', format_grade($course['midterm'])],
+            ['Final', format_grade($course['final'])],
+            ['Final rating', format_grade($rating)],
+        ],
+        'link' => $withLink ? detail_link($user, 'pages/academics/grades.php', 'All grades') : null,
+    ]);
+}
+
 /** Compact list of a student's classes (code, title, schedule, room) for the dashboard. */
-function class_list(array $courses): void
+function class_list(array $user, array $courses): void
 {
     if (!$courses) {
         app_empty('fa-calendar-xmark', 'No classes yet', 'Your classes will appear here once you are enrolled.');
@@ -169,8 +211,8 @@ function class_list(array $courses): void
     ?>
                 <div class="content-list compact">
                     <?php foreach ($courses as $course): ?>
-                    <article class="content-item">
-                        <h3 class="content-item-title"><?= e($course['code'] . ' - ' . $course['title']) ?></h3>
+                    <article class="content-item"<?= detail_attr(course_detail($course, ['link' => detail_link($user, 'pages/academics/schedule.php', 'Weekly schedule')])) ?>>
+                        <h3 class="content-item-title"><?= detail_button($course['code'] . ' - ' . $course['title']) ?></h3>
                         <div class="content-meta">
                             <?php if ($course['block']): ?>
                             <span><i class="fa-solid fa-users-rectangle"></i> <?= e($course['block']) ?></span>
@@ -185,6 +227,116 @@ function class_list(array $courses): void
                         </div>
                     </article>
                     <?php endforeach; ?>
+                </div>
+    <?php
+}
+
+/**
+ * The week as a bar chart: a row per day, the time of day across, a bar per class meeting and one color per
+ * subject (the same subject in two blocks shares its color). Clicking a bar shows the class details; classes
+ * without days and times are listed under the chart.
+ */
+function schedule_chart(array $classes): void
+{
+    $hasTime = fn($c) => $c['days'] && $c['start_time'] && $c['end_time'];
+    $scheduled = array_values(array_filter($classes, $hasTime));
+    $unscheduled = array_values(array_filter($classes, fn($c) => !$hasTime($c)));
+
+    // a color per subject, in course-code order
+    $codes = array_values(array_unique(array_column($scheduled, 'code')));
+    sort($codes, SORT_NATURAL | SORT_FLAG_CASE);
+    $colors = [];
+    foreach ($codes as $i => $code) {
+        $colors[$code] = SCHEDULE_COLORS[$i] ?? SCHEDULE_OTHER_COLOR;
+    }
+    $titles = array_column($scheduled, 'title', 'code');
+
+    // hours shown: at least 7 AM to 5 PM, widened to fit every class
+    $hours = fn(string $time) => (int) substr($time, 0, 2) + (int) substr($time, 3, 2) / 60;
+    $first = 7;
+    $last = 17;
+    foreach ($scheduled as $class) {
+        $first = min($first, (int) floor($hours($class['start_time'])));
+        $last = max($last, (int) ceil($hours($class['end_time'])));
+    }
+    $span = $last - $first;
+    $percent = fn(float $hour) => round(($hour - $first) / $span * 100, 3);
+
+    // Monday to Friday, and Saturday when a class meets then. Classes that overlap on a day get their own lanes.
+    $days = array_keys(CLASS_DAYS);
+    if (!array_filter($scheduled, fn($c) => in_array('Sat', explode(',', $c['days']), true))) {
+        $days = array_diff($days, ['Sat']);
+    }
+    $rows = [];
+    foreach ($days as $day) {
+        $meetings = array_filter($scheduled, fn($c) => in_array($day, explode(',', $c['days']), true));
+        usort($meetings, fn($a, $b) => strcmp($a['start_time'], $b['start_time']));
+        $laneEnds = [];
+        $bars = [];
+        foreach ($meetings as $class) {
+            $lane = 0;
+            while (isset($laneEnds[$lane]) && $laneEnds[$lane] > $class['start_time']) {
+                $lane++;
+            }
+            $laneEnds[$lane] = $class['end_time'];
+            $bars[] = [$class, $lane];
+        }
+        $rows[$day] = [$bars, max(1, count($laneEnds))];
+    }
+    $today = date('D');
+    ?>
+                <div class="sched-chart">
+                    <?php if (!$scheduled): ?>
+                    <?php app_empty('fa-calendar-week', 'No class times yet', 'Classes show up here once they have days and times.'); ?>
+                    <?php else: ?>
+                    <div class="sched-scroll">
+                        <div class="sched-grid" style="--hours: <?= $span ?>;">
+                            <div class="sched-row sched-axis" aria-hidden="true">
+                                <div class="sched-day"></div>
+                                <div class="sched-track">
+                                    <?php for ($hour = $first; $hour <= $last; $hour += $span > 12 ? 2 : 1): ?>
+                                    <span style="left: <?= $percent($hour) ?>%;"><?= e(date('g A', mktime($hour, 0))) ?></span>
+                                    <?php endfor; ?>
+                                </div>
+                            </div>
+                            <?php foreach ($rows as $day => [$bars, $lanes]): ?>
+                            <div class="sched-row<?= $day === $today ? ' today' : '' ?>" style="--lanes: <?= $lanes ?>;">
+                                <div class="sched-day"><?= e($day) ?><?php if ($day === $today): ?><small>Today</small><?php endif; ?></div>
+                                <div class="sched-track">
+                                    <?php foreach ($bars as [$class, $lane]):
+                                        [$fill, $ink] = $colors[$class['code']];
+                                        $start = $hours($class['start_time']);
+                                        $time = format_time_range($class['start_time'], $class['end_time']);
+                                        $room = $class['room'] ? 'Room ' . $class['room'] : '';
+                                    ?>
+                                    <button type="button" class="sched-bar" data-detail-trigger<?= detail_attr(course_detail($class, ['color' => $fill])) ?>
+                                            data-tip="<?= e(json_encode([$day . ' ' . $time, class_name($class) . ' - ' . $class['title'], $room])) ?>"
+                                            aria-label="<?= e(class_name($class) . ', ' . date('l', strtotime($day)) . ' ' . $time . ($room ? ', ' . $room : '')) ?>"
+                                            style="left: <?= $percent($start) ?>%; width: calc(<?= round(($hours($class['end_time']) - $start) / $span * 100, 3) ?>% - 2px); --lane: <?= $lane ?>; --bar: <?= $fill ?>; --ink: <?= $ink ?>;">
+                                        <span class="sched-bar-label"><?= e($class['code']) ?></span>
+                                    </button>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php if (count($codes) > 1): ?>
+                    <ul class="sched-legend" aria-label="Subjects">
+                        <?php foreach ($codes as $code): ?>
+                        <li><span class="sched-swatch" style="background: <?= $colors[$code][0] ?>;"></span><strong><?= e($code) ?></strong> <span class="muted"><?= e($titles[$code]) ?></span></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php endif; ?>
+                    <?php endif; ?>
+                    <?php if ($unscheduled): ?>
+                    <div class="sched-unscheduled">
+                        <span><i class="fa-regular fa-clock"></i> Schedule to be announced:</span>
+                        <?php foreach ($unscheduled as $class): ?>
+                        <span class="sched-chip"<?= detail_attr(course_detail($class)) ?>><?= detail_button(class_name($class)) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
     <?php
 }

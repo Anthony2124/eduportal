@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     id_number      VARCHAR(20)      NOT NULL,             -- Student ID, Employee ID (faculty) or username (admin)
     first_name     VARCHAR(60)      NOT NULL,
     last_name      VARCHAR(60)      NOT NULL,
+    gender         ENUM('male', 'female', 'unspecified') NULL,  -- students: asked at sign-up (unspecified = prefer not to say)
     program        VARCHAR(80)      NULL,                 -- students only
     year_level     TINYINT UNSIGNED NULL,                 -- students only
     department     VARCHAR(80)      NULL,                 -- faculty: department, admin: office
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS scholarships (
 
 CREATE TABLE IF NOT EXISTS courses (
     id          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+    program     VARCHAR(80)       NULL,                   -- the degree program it belongs to, e.g. BS Information Technology
     code        VARCHAR(20)       NOT NULL,               -- e.g. CS 201
     title       VARCHAR(150)      NOT NULL,
     units       TINYINT UNSIGNED  NOT NULL,
@@ -187,4 +189,44 @@ CREATE TABLE IF NOT EXISTS chat_reads (
     PRIMARY KEY (course_id, user_id),
     CONSTRAINT fk_chat_reads_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
     CONSTRAINT fk_chat_reads_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Program group chats: one per degree program, for the admin and the faculty who teach a class of that program
+-- (worked out from courses, so picking a class of the program adds a faculty member). The admin isn't in class chats.
+-- Same shape as chat_messages / chat_reads so the same code reads both; program chats only have kind 'message'.
+CREATE TABLE IF NOT EXISTS program_chat_messages (
+    id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    program     VARCHAR(80)   NOT NULL,                 -- one of PROGRAMS (api/bootstrap.php)
+    user_id     INT UNSIGNED  NULL,                     -- NULL once the account is deleted
+    kind        ENUM('message', 'added', 'removed') NOT NULL DEFAULT 'message',
+    body        TEXT          NULL,
+    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_program_chat_messages_program (program, id),
+    CONSTRAINT fk_program_chat_messages_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS program_chat_reads (
+    program       VARCHAR(80)   NOT NULL,
+    user_id       INT UNSIGNED  NOT NULL,
+    last_read_id  INT UNSIGNED  NOT NULL DEFAULT 0,
+    PRIMARY KEY (program, user_id),
+    CONSTRAINT fk_program_chat_reads_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Activity log (Activity Logs page, admin only): sign-ins, account changes, posts, courses, enrollment and grades.
+-- The person's name and role are copied in, so a line still says who it was after their account is deleted.
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    user_id     INT UNSIGNED  NULL,                     -- NULL once the account is deleted, or for an unknown sign-in
+    user_name   VARCHAR(130)  NULL,
+    role        VARCHAR(10)   NULL,
+    category    VARCHAR(20)   NOT NULL,                 -- auth, account, content or academics (LOG_CATEGORIES)
+    action      VARCHAR(60)   NOT NULL,                 -- e.g. "Signed in", "Added course"
+    details     VARCHAR(255)  NOT NULL DEFAULT '',
+    ip_address  VARCHAR(45)   NULL,
+    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_activity_logs_created (created_at),
+    CONSTRAINT fk_activity_logs_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB;

@@ -18,13 +18,13 @@ if (!$admin || $admin['role'] !== 'admin') {
 }
 
 match ($_GET['action'] ?? '') {
-    'create_faculty' => action_create_faculty($input),
+    'create_faculty' => action_create_faculty($admin, $input),
     'delete' => action_delete_user($admin, $input),
     default => fail('Unknown action.', 404),
 };
 
 /** Faculty can't sign up themselves; the admin creates their account here. */
-function action_create_faculty(array $input): never
+function action_create_faculty(array $admin, array $input): never
 {
     $firstName = trim((string) ($input['firstName'] ?? ''));
     $lastName = trim((string) ($input['lastName'] ?? ''));
@@ -66,6 +66,7 @@ function action_create_faculty(array $input): never
         'INSERT INTO users (role, id_number, first_name, last_name, department, email, password_hash)
          VALUES (?, ?, ?, ?, ?, ?, ?)'
     )->execute(['faculty', $idNumber, $firstName, $lastName, $department, $email, password_hash($password, PASSWORD_DEFAULT)]);
+    log_activity($admin, 'account', 'Created a faculty account', "{$firstName} {$lastName} ({$idNumber}, {$department})");
 
     json_response(['ok' => true, 'name' => "{$firstName} {$lastName}"]);
 }
@@ -84,5 +85,7 @@ function action_delete_user(array $admin, array $input): never
 
     // The deleted user's open sessions stop working on their next request (current_user() finds no row)
     db()->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+    log_activity($admin, 'account', 'Deleted an account',
+        "{$user['first_name']} {$user['last_name']} (" . ROLE_NAMES[$user['role']] . ", {$user['id_number']})");
     json_response(['ok' => true, 'role' => $user['role']]);
 }
